@@ -31,8 +31,12 @@ class CompressionStream:
     def feed_bytes_to_compress(self, bytes):
         pass
 
-    def finish(self, bytes):
+    def finish(self):
         pass
+
+    def decompress(self):
+        pass
+
 
 class DecompressionStream:
     def __init__(self):

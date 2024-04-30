@@ -1,11 +1,19 @@
-from zlib_compression import *
-
+import compression_lib
 if __name__ == "__main__":
-    a = b"rgqergnioqerjgqo8ugr89qerhgqjergopqu8ghqergqijreg"
-    c = Zlib()
-    c = c.compress_string("abcdef")
+    # string = b"abcderghijklmnopqrstuvwxyz"
+    # chunk_size = 7
+    # ix = 0
+    # while True:
+    #     next = string[chunk_size*ix:chunk_size*(ix+1)]
+    #     if next == b'':
+    #         break
 
-    d = ZlibDecompressionStream()
-    d.feed_bytes_to_decompress(c[:20])
-    d.feed_bytes_to_decompress(c[20:])
-    print(d.finish())
+    #     start_stream(ix)
+    #     feed_bytes_to_stream(ix, next)
+    #     ix += 1
+    
+    # finish_all_streams()
+    # print(COMPRESSION_STREAMS[0].decompress())
+    compression_lib.start_compression_stream(0)
+    compression_lib.start_compression_stream(7)
+    print(compression_lib.get_all_compression_streams())

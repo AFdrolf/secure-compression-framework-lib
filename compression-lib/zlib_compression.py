@@ -14,8 +14,11 @@ class Zlib(CompressionAlgorithm):
 
     def compress_string(self, data_string, level=-1):
         return self.compress(data_string.encode(), level)
-
-    def decompress(self, compressed_data: bytes):
+    
+    def decompress(self, compressed_data):
+        return zlib.decompress(compressed_data)
+    
+    def decompress_to_string(self, compressed_data: bytes):
         return self.decompress(compressed_data).decode()
 
 
@@ -24,18 +27,26 @@ class ZlibCompressionStream(CompressionStream):
     def __init__(self):
         self.compression_object = zlib.compressobj()
         self.compressed = b''
+        self.finished = False
 
 
     def feed_bytes_to_compress(self, data: bytes):
+        if self.finished: return
         self.compressed += self.compression_object.compress(data)
         return self.compressed
 
     def finish(self):
+        if self.finished: return
         self.compressed += self.compression_object.flush()
+        self.finished = True
         return self.compressed
     
     def __getitem__(self, val):
         return self.compressed[val]
+    
+    def decompress(self):
+        if not self.finished: return
+        return Zlib().decompress(self.compressed)
     
 
 class ZlibDecompressionStream(DecompressionStream):
