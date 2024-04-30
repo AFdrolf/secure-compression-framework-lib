@@ -13,7 +13,7 @@ class CompressionAlgorithm:
 
     def compress_string(self, data_string, *parameters):
         """Compress the input string of data."""
-        return self.compress(data_string.encode(), parameters)
+        pass
 
     def decompress(self, compressed_data: bytes):
         """Decompress the input bytes of data to bytes"""
@@ -21,7 +21,25 @@ class CompressionAlgorithm:
 
     def decompress_to_string(self, compressed_data: bytes):
         """Decompress the input bytes of data to string."""
-        return self.decompress(compressed_data).decode()
+        pass
 
-    def start_compression_stream(self, id=None):
+
+class CompressionStream:
+    def __init__(self):
+        pass
+
+    def feed_bytes_to_compress(self, bytes):
+        pass
+
+    def finish(self, bytes):
+        pass
+
+class DecompressionStream:
+    def __init__(self):
+        pass
+
+    def feed_bytes_to_decompress(self, compressed_data: bytes):
+        pass
+
+    def finish(self):
         pass
