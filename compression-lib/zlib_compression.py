@@ -5,6 +5,7 @@ from compression_interface import CompressionAlgorithm, CompressionStream, Decom
 
 import zlib
 
+
 class Zlib(CompressionAlgorithm):
     def __init__(self):
         pass
@@ -20,7 +21,6 @@ class Zlib(CompressionAlgorithm):
     
     def decompress_to_string(self, compressed_data: bytes):
         return self.decompress(compressed_data).decode()
-
 
 
 class ZlibCompressionStream(CompressionStream):
@@ -47,7 +47,7 @@ class ZlibCompressionStream(CompressionStream):
     def decompress(self):
         if not self.finished: return
         return Zlib().decompress(self.compressed)
-    
+
 
 class ZlibDecompressionStream(DecompressionStream):
     def __init__(self):
