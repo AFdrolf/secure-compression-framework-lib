@@ -163,7 +163,7 @@ def run_example(partition_policy, files_dir, principals, comparison_function):
 
 
 if __name__ == "__main__":
-    # Set parameters
+    # Set parameters. TODO: parse as command line arguments and add a main() function.
     number_of_files = 7
     max_file_size = 100
     classes_of_duplicates = [7]
