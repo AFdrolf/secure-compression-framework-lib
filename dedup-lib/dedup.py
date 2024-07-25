@@ -2,6 +2,8 @@
 import argparse
 import os
 
+# TODO: generalize to chunk based dedup?
+
 def dedup(comparison_function, file_paths):
     """
     Deduplicates the list of input files files by comparing them according to some comparison function.

@@ -2,6 +2,8 @@ import compression_interface
 import zlib_compression
 
 
+# TODO refactor to class.
+
 COMPRESSION_STREAMS = {}
 DECOMPRESSION_STREAMS = {}
 
