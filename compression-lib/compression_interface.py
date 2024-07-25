@@ -25,10 +25,10 @@ class CompressionAlgorithm:
 
 
 class CompressionStream:
-    def __init__(self):
+    def __init__(self, *parameters):
         pass
 
-    def feed_bytes_to_compress(self, bytes):
+    def compress(self, data):
         pass
 
     def finish(self):
@@ -42,7 +42,7 @@ class DecompressionStream:
     def __init__(self):
         pass
 
-    def feed_bytes_to_decompress(self, compressed_data: bytes):
+    def decompress(self, compressed_data: bytes):
         pass
 
     def finish(self):
