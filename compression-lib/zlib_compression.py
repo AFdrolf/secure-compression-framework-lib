@@ -31,11 +31,14 @@ class ZlibCompressionStream(CompressionStream):
 
 
     def compress(self, data: bytes):
+        # Returns the compression of the input bytes to this call.
         if self.finished: return
-        self.compressed += self.compression_object.compress(data)
-        return self.compressed
+        c = self.compression_object.compress(data)
+        self.compressed += c
+        return c
 
     def finish(self):
+        # Returns the entire compression of input bytes.
         if self.finished: return
         self.compressed += self.compression_object.flush()
         self.finished = True
@@ -53,11 +56,15 @@ class ZlibDecompressionStream(DecompressionStream):
     def __init__(self):
         self.decompression_object = zlib.decompressobj()
         self.decompressed = b''
+        self.finished = False
 
     def decompress(self, compressed_data: bytes):
-        self.decompressed += self.decompression_object.decompress(compressed_data)
-        return self.decompressed
+        d = self.decompression_object.decompress(compressed_data)
+        self.decompressed += d
+        return d
 
     def finish(self):
+        if self.finished: return
         self.decompressed += self.decompression_object.flush()
+        self.finished = True
         return self.decompressed
