@@ -1,8 +1,8 @@
 """Library for deduplicating files based on particular partition policies."""
-import argparse
 import os
 
 # TODO: generalize to chunk based dedup?
+# TODO: verify if comparison_function(file|class_id) is faster?
 
 def dedup(comparison_function, file_paths):
     """

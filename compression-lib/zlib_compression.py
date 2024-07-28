@@ -24,7 +24,7 @@ class Zlib(CompressionAlgorithm):
 
 
 class ZlibCompressionStream(CompressionStream):
-    def __init__(self, level):
+    def __init__(self, level=-1):
         self.compression_object = zlib.compressobj(level=level)
         self.compressed = b''
         self.finished = False
