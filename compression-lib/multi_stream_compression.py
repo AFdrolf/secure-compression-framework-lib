@@ -90,13 +90,10 @@ class MultiStreamDecompressor:
         return decompressed_ordered
             
 
-
-
-
 def partition_and_compress(partition_policy, data, principals, compression_streams_type, delimiter=b"", *args):
     """
     Args:
-        - partition_policy (generator):
+        - partition_policy (generator): yields pairs of the form (class of chunk, data chunk)
     """
     # TODO: different *args for partition_policy and MultiStreamCompressor; add support for writing data to output file.
     multi_stream_compressor = MultiStreamCompressor(compression_streams_type, delimiter, *args)
@@ -107,18 +104,19 @@ def partition_and_compress(partition_policy, data, principals, compression_strea
     
     return multi_stream_compressor.finish()
 
+def decompress_multi_stream(compressed_data, stream_switch, compression_streams_type, delimiter=b""):
+    multi_stream_decompressor = MultiStreamDecompressor(compression_streams_type, delimiter)
+    multi_stream_decompressor.decompress(compressed_data, stream_switch)
+    return multi_stream_decompressor.finish()
+
+
+def partition_and_compress_resources(data, principals, data_to_resources, policy_resources, compression_streams_type, delimiter=b"", *args):
+    partition_policy_resources_init = lambda d, p : partition_policy_resources(d, p, data_to_resources, policy_resources, *args)
+    return partition_and_compress(partition_policy_resources_init, data, principals, compression_streams_type, delimiter)
+
 def partition_policy_resources(data, principals, data_to_resources, policy_resources, *args):
     """
     Generic resource-based partition policy. Iterates over 'data', casting it to resources (as per 'data_to_resources', which is a generator) and computing policy_resources over these.
     """
     for data_chunk, resource in data_to_resources(data, *args):
         yield policy_resources(resource, principals), data_chunk
-
-def partition_and_compress_resources(data, principals, data_to_resources, policy_resources, compression_streams_type, *args):
-    partition_policy_resources = lambda d, p : partition_policy_resources(d, p, data_to_resources, policy_resources, *args)
-    return partition_and_compress(partition_policy_resources, data, principals, compression_streams_type)
-
-def decompress_multi_stream(compressed_data, stream_switch, compression_streams_type, delimiter=b""):
-    multi_stream_decompressor = MultiStreamDecompressor(compression_streams_type, delimiter)
-    multi_stream_decompressor.decompress(compressed_data, stream_switch)
-    return multi_stream_decompressor.finish()
