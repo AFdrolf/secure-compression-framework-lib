@@ -123,3 +123,24 @@ if __name__ == "__main__":
     print(zlib.decompress(concatenate(dawn, fox, test, hello)))
     print(zlib.decompress(concatenate(fox, hello, dawn, test)))
     print(zlib.decompress(concatenate(test, dawn, hello, fox)))
+
+
+    # Sample compressed data (replace this with your actual compressed data)
+    compressed_data = b'\x78\x9c\x4b\x4c\x4e\x55\x28\xcf\x2f\xca\x4f\x4f\x55\x48\xad\x4c\x4a\x4d\x2f\x55\x54\x48\xcc\xcf\x4b\x2c\x4a\x2e\x55\x4e\x4f\x2d\x49\x2c\x54\x2e\xcc\x2d\x51\x50\x2e\x4a\x2e\x54\x2e\x01\x00\x9d\x5d\x0b\x64'
+
+    # Create a decompress object
+    decompressor = zlib.decompressobj()
+
+    # Variable to store decompressed data
+    decompressed_data = b''
+
+    # Process the compressed data one byte at a time
+    for byte in compressed_data:
+        # Feed one byte at a time into the decompressobj
+        decompressed_data += decompressor.decompress(bytes([byte]))
+
+    # Finalize the decompression to get any remaining data
+    decompressed_data += decompressor.flush()
+
+    # Print or use the decompressed data
+    print(decompressed_data.decode('utf-8'))

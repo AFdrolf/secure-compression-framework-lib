@@ -39,30 +39,58 @@ class MultiStreamCompressor:
 class MultiStreamDecompressor:
     def __init__(self, decompression_streams_type, delimiter=b""):
         self.decompression_streams_type = decompression_streams_type
-        # self.decompression_object = decompression_streams_type()
-        self.compression_streams = {}
+        self.decompression_streams = {}
         self.delimiter = delimiter
+        self.stream_switch = None
 
-    def decompress(self, compressed_data, parallel=False):
+    def decompress(self, compressed_data, stream_switch, parallel=False):
         # # TODO: Add support for multithreading. If parallel: Find boundary, and process each stream in parallel.
         # Normal: decompress, until unused_data is found, then start new decompressionstream object. Also try to just do this: https://stackoverflow.com/questions/58402524/python-zlib-how-to-decompress-many-objects
         if not parallel:
-            decompressed_data = b""
+            self.stream_switch = stream_switch
+            for stream_key in stream_switch:
+                if stream_key not in self.decompression_streams: self.decompression_streams[stream_key] = self.decompression_streams_type()
+
             iterator = iter(range(0, len(compressed_data)))
+            stream_key_iter = 0
+            to_decompress = b""
             for i in iterator:
                 compressed_chunk = compressed_data[i:i+len(self.delimiter)]
                 if compressed_chunk != self.delimiter:
-                    decompressed_data += self.decompression_object.decompress(compressed_chunk[0:1])
-                    # print(self.decompression_object.decompressed)
+                    to_decompress += compressed_chunk[0:1]
                     
                 else:
-                    # print("HERE")
-                    for _ in range(len(self.delimiter)):
+
+                    self.decompression_streams[list(self.decompression_streams.keys())[stream_key_iter]].decompress(to_decompress)
+                    to_decompress = b""
+                    stream_key_iter += 1
+                    for _ in range(len(self.delimiter)-1):
                         next(iterator, None)
-            return decompressed_data
+            return
     
     def finish(self):
-        return self.decompression_object.finish()
+        pointers_stream = {}
+        for stream_key, decompression_stream in self.decompression_streams.items():
+           pointers_stream[stream_key] = 0
+           decompression_stream.finish()
+        
+        decompressed_ordered = b""
+        for stream in self.stream_switch:
+            decompressed = b""
+            i = pointers_stream[stream]
+            while True:
+                compressed_chunk = self.decompression_streams[stream].decompressed[i:i+len(self.delimiter)]
+                if compressed_chunk != self.delimiter:
+                    decompressed += compressed_chunk[0:1]
+                    i += 1
+                else:
+                    decompressed_ordered += decompressed
+                    pointers_stream[stream] = i + len(self.delimiter)
+                    break
+        return decompressed_ordered
+            
+
+
 
 
 def partition_and_compress(partition_policy, data, principals, compression_streams_type, delimiter=b"", *args):
@@ -90,7 +118,7 @@ def partition_and_compress_resources(data, principals, data_to_resources, policy
     partition_policy_resources = lambda d, p : partition_policy_resources(d, p, data_to_resources, policy_resources, *args)
     return partition_and_compress(partition_policy_resources, data, principals, compression_streams_type)
 
-def decompress_multi_stream(compressed_data, compression_streams_type, delimiter=b""):
+def decompress_multi_stream(compressed_data, stream_switch, compression_streams_type, delimiter=b""):
     multi_stream_decompressor = MultiStreamDecompressor(compression_streams_type, delimiter)
-    multi_stream_decompressor.decompress(compressed_data)
+    multi_stream_decompressor.decompress(compressed_data, stream_switch)
     return multi_stream_decompressor.finish()
