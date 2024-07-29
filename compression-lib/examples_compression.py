@@ -1,6 +1,7 @@
 import os
 
 import multi_stream_compression
+from parsers import json_parser
 import zlib_compression
 
 
@@ -65,6 +66,18 @@ def compress_simple_resources(data, block_size, mod, compression_streams_type, d
 
 def decompress_simple_resources(compressed_data, stream_switch, decompression_streams_type, delimiter=b""):
     return multi_stream_compression.decompress_multi_stream(compressed_data, stream_switch, decompression_streams_type, delimiter)
+
+############################ 
+# JSON examples with resources
+############################
+def json_to_resources(json_file_path, json_object_to_resource_config):
+    json_parser.parse_json(json_file_path)
+
+def json_policy_example():
+    pass
+
+def compress_json_resources(json_file, compression_streams_type, json_to_resources, policy_resources, delimiter=b""):
+    pass
 
 if __name__ == "__main__":
     example_type = "simple_resources"
