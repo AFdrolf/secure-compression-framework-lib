@@ -10,6 +10,7 @@ class MultiStreamCompressor:
         self.compression_streams_type = compression_streams_type
         self.parameters = parameters
         self.compression_streams = {}
+        self.stream_switch = []
         # TODO: Add support for multithreading.
         self.delimiter = delimiter
 
@@ -19,7 +20,8 @@ class MultiStreamCompressor:
         if not stream_key in self.compression_streams:
             self.compression_streams[stream_key] = self.compression_streams_type(*self.parameters)
         
-        return self.compression_streams[stream_key].compress(data)
+        self.stream_switch.append(stream_key)
+        return self.compression_streams[stream_key].compress(data+self.delimiter)
 
     def finish(self):
         """
@@ -31,22 +33,33 @@ class MultiStreamCompressor:
             compressed_all += compression_stream.finish()
             compressed_all += self.delimiter
         
-        return compressed_all
+        return compressed_all, self.stream_switch
     
 
 class MultiStreamDecompressor:
-    def __init__(self, decompression_streams_type):
-        self.compression_streams_type = decompression_streams_type
-        self.decompression_object = decompression_streams_type()
-        self.decompressed = b''
+    def __init__(self, decompression_streams_type, delimiter=b""):
+        self.decompression_streams_type = decompression_streams_type
+        # self.decompression_object = decompression_streams_type()
+        self.compression_streams = {}
+        self.delimiter = delimiter
 
     def decompress(self, compressed_data, parallel=False):
         # # TODO: Add support for multithreading. If parallel: Find boundary, and process each stream in parallel.
         # Normal: decompress, until unused_data is found, then start new decompressionstream object. Also try to just do this: https://stackoverflow.com/questions/58402524/python-zlib-how-to-decompress-many-objects
         if not parallel:
-            d = self.decompression_object.decompress(compressed_data)
-            self.decompressed += d
-            return d
+            decompressed_data = b""
+            iterator = iter(range(0, len(compressed_data)))
+            for i in iterator:
+                compressed_chunk = compressed_data[i:i+len(self.delimiter)]
+                if compressed_chunk != self.delimiter:
+                    decompressed_data += self.decompression_object.decompress(compressed_chunk[0:1])
+                    # print(self.decompression_object.decompressed)
+                    
+                else:
+                    # print("HERE")
+                    for _ in range(len(self.delimiter)):
+                        next(iterator, None)
+            return decompressed_data
     
     def finish(self):
         return self.decompression_object.finish()
@@ -76,3 +89,8 @@ def partition_policy_resources(data, principals, data_to_resources, policy_resou
 def partition_and_compress_resources(data, principals, data_to_resources, policy_resources, compression_streams_type, *args):
     partition_policy_resources = lambda d, p : partition_policy_resources(d, p, data_to_resources, policy_resources, *args)
     return partition_and_compress(partition_policy_resources, data, principals, compression_streams_type)
+
+def decompress_multi_stream(compressed_data, compression_streams_type, delimiter=b""):
+    multi_stream_decompressor = MultiStreamDecompressor(compression_streams_type, delimiter)
+    multi_stream_decompressor.decompress(compressed_data)
+    return multi_stream_decompressor.finish()

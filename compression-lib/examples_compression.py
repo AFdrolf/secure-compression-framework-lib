@@ -30,16 +30,26 @@ def compress_in_blocks_mod(data, block_size, number_of_classes, compression_stre
 
     return multi_stream_compression.partition_and_compress(partition_policy_blocks_mod, data, None, compression_streams_type, delimiter)
 
+def decompress_blocks_mod(compressed_data, decompression_streams_type, delimiter=b""):
+    return multi_stream_compression.decompress_multi_stream(compressed_data, decompression_streams_type, delimiter)
+
 
 if __name__ == "__main__":
     example_type = "simple"
     compression_streams_type = zlib_compression.ZlibCompressionStream
+    decompression_streams_type = zlib_compression.ZlibDecompressionStream
     delimiter = b" || "
 
-
+    print("- EXAMPLE TYPE: %s" % example_type.upper())
     if example_type == "simple":
-        block_size = 4
+        block_size = 2
         number_of_classes = 2
-        data_length = 8
+        data_length = 50
         data = generate_data(example_type, data_length)
-        print(compress_in_blocks_mod(data, block_size, number_of_classes, compression_streams_type, delimiter))
+        data = b"12345678"
+        print("\tData: %s" % data)
+        compressed_data, stream_switch = compress_in_blocks_mod(data, block_size, number_of_classes, compression_streams_type, delimiter)
+        print("\tCompressed data: %s" % compressed_data)
+        print(stream_switch)
+        decompressed_data = decompress_blocks_mod(compressed_data, decompression_streams_type, delimiter)
+        print("\tDecompressed data: %s" % decompressed_data)
