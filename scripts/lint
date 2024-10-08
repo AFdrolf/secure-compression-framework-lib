@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Lint source code.
+
+cd "$(dirname "$0")/.."
+
+source scripts/_global
+activate_venv
+
+echo_step "Checking ruff formatting"
+ruff format --check ${SRC_DIR} ${TESTS_DIR}
+
+echo_step "Checking isort formatting"
+isort --check ${SRC_DIR} ${TESTS_DIR}
+
+echo_step "Linting with ruff"
+ruff check ${SRC_DIR}
+
+echo_step "Linting with mypy"
+mypy ${SRC_DIR}

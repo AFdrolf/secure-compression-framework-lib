@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Format source code.
+
+cd "$(dirname "$0")/.."
+
+source scripts/_global
+activate_venv
+
+echo_step "Running ruff format"
+ruff format ${SRC_DIR} ${TESTS_DIR}
+
+echo_step "Running isort"
+isort ${SRC_DIR} ${TESTS_DIR}

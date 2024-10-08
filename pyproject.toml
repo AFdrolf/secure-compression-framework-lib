@@ -1,0 +1,100 @@
+[build-system]
+requires = ["flit_core>=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "secure_compression_framework_lib"
+version = "0.0.1"
+description = "My new project."
+authors = [
+  { name = "Andres Fabrega"},
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.11"
+dependencies = [
+]
+
+[project.optional-dependencies]
+# up-to-date dependencies as of 2/21/24
+dev = [
+  "pytest==8.0.1",
+  "isort[colors]==5.13.2",
+  "mypy==1.8.0",
+  "ruff==0.3.4",
+]
+
+[project.urls]
+"Homepage" = "None"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Rules: https://docs.astral.sh/ruff/rules/
+select = [
+    "D", # pydocstyle
+    "I", # isort
+    "UP", # pyupgrade
+    "C4", # flake8-comprehensions
+    "ISC", # flake8-implicit-str-concat
+    "T20", # flake8-print
+    "PT", # flake8-pytest-style
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
+    "ERA", # eradicate
+    "PL", # Pylint
+    "TRY", # tryceratops
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "D107", # Missing docstring in `__init__`
+    "D203", # one-blank-line-before-class
+    "D213", # multi-line-summary-second-line
+    "ISC001", # conflicts with ruff formatter
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.isort]
+line_length = 120
+py_version = 311
+include_trailing_comma = true
+profile = "black"
+indent = 4
+color_output = true
+
+[tool.mypy]
+python_version = "3.11"
+pretty = true
+show_traceback = true
+color_output = true
+
+allow_redefinition = false
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+ignore_missing_imports = true
+implicit_reexport = false
+no_implicit_optional = true
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disable_error_code = "attr-defined"

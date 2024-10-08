@@ -6,7 +6,7 @@ import sys
 
 import dedup
 sys.path.append(sys.path[0] + '/..')
-from lib import Principal
+from secure_compression_framework_lib.lib import Principal
 
 
 ############################ 

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Execute tests.
+
+cd "$(dirname "$0")/.."
+
+source scripts/_global
+activate_venv
+
+echo_step "Running tests"
+pytest ${TESTS_DIR}
