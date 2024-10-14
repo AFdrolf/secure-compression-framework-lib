@@ -1,16 +1,16 @@
 import os
 
-from partitioner_interface import Partitioner
+from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 
 class FileSystemPartitioner(Partitioner):
     def __init__(self, files_dir):
-        self.files_dir = files_dir
+        super().__init__(files_dir)
 
     def partition(self, partition_policy, access_control_policy):
         # Each output bucket contains the file paths of the files in that bucket
         file_buckets = dict()
-        for root, _, files in os.walk(self.files_dir):
+        for root, _, files in os.walk(self.data):
             for file in files:
                 file_path = os.path.join(root, file)
                 principal_id = access_control_policy(file_path)

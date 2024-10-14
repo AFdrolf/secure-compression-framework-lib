@@ -1,6 +1,7 @@
 import sqlite3
 
-from partitioner_interface import Partitioner
+from secure_compression_framework_lib.partitioner.partitioner import Partitioner
+
 
 # TODO: we may need to make this code more efficient to deal with large databases.
 
