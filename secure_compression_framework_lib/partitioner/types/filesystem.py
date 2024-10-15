@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
@@ -9,7 +10,7 @@ class FileSystemPartitioner(Partitioner):
 
     def partition(self, partition_policy, access_control_policy):
         # Each output bucket contains the file paths of the files in that bucket
-        file_buckets = dict()
+        file_buckets: dict[str, list[str]] = {}
         for root, _, files in os.walk(self.data):
             for file in files:
                 file_path = os.path.join(root, file)

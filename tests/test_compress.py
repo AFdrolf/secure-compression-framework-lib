@@ -49,6 +49,7 @@ def test_compress_diff_labels():
     assert d == TEST1 + TEST2
     assert len(c_diff) > len(c_same)
 
+
 def test_compress_blocks():
     """Test compression handles multiple blocks with different labels."""
     data_length = 40
@@ -62,14 +63,14 @@ def test_compress_blocks():
     def blocks_to_resources(data):
         """Yield data block if it is an even block number, or else yield None."""
         block_number = 0
-        while block_number*block_size < len(data):
+        while block_number * block_size < len(data):
             i = block_number * block_size
-            block = data[i:i+block_size]
+            block = data[i : i + block_size]
             out = block if block_number % 2 == 0 else None
             yield out, block
             block_number += 1
 
-    for (stream_key, data_chunk) in blocks_to_resources(rdata):
+    for stream_key, data_chunk in blocks_to_resources(rdata):
         msc.compress(stream_key, data_chunk)
 
     compressed_data, stream_switch = msc.finish()

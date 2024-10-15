@@ -1,6 +1,7 @@
 """Implements access control functionality for use by partitioner."""
+
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
 
 class Principal:
@@ -11,16 +12,15 @@ class Principal:
     Can be instantiated with a dictionary of attributes. Subsequent attributes can be set/updated with p[k] = v, for a
     principal object P.
     """
+
     def __init__(self, **attr):
-        for k,v in attr.items():
+        for k, v in attr.items():
             assert not isinstance(v, dict)  # Breaks hash
             setattr(self, k, v)
-        return
 
     def __setitem__(self, k, v):
         assert not isinstance(v, dict)
         self.k = v
-        return
 
     def __getitem__(self, k):
         return self.k
@@ -37,6 +37,7 @@ class AccessPolicy:
 
     Basic POC implementation is a dict. But we would like this to be a blackbox function provided by application?
     """
+
     def __init__(self, views: dict[object, Principal]) -> None:
         self.views = defaultdict(Principal, views)
 
@@ -47,6 +48,7 @@ class AccessPolicy:
 # A partition policy maps a principal to a bucket label
 PartitionPolicy: Callable[[Principal], str]
 
+
 def attribute_based_partition_policy(p: Principal, attr: str) -> str:
-    """Partitions based on a given attribute e.g. is_contact"""
+    """Partitions based on a given attribute e.g. is_contact."""
     return str(p.__getattribute__(attr))

@@ -1,3 +1,5 @@
+"""Base class for partitioners."""
+
 from typing import Any
 
 

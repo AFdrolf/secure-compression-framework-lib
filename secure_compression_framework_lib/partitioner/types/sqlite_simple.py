@@ -2,16 +2,15 @@ import sqlite3
 
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
-
 # TODO: we may need to make this code more efficient to deal with large databases.
+
 
 class SQLiteSimplePartitioner(Partitioner):
     def __init__(self, db_path):
         self.db_path = db_path
-    
-    def partition(self, partition_policy, access_control_policy):
-        db_buckets = dict()
 
+    def partition(self, partition_policy, access_control_policy):
+        db_buckets = {}
 
         con = sqlite3.connect(self.db_path)
         cur = con.cursor()
@@ -30,7 +29,7 @@ class SQLiteSimplePartitioner(Partitioner):
                 # TODO: pre-process row to make it compatible with access control policy (maybe just get the primary key)?
                 principal_id = access_control_policy(row)
                 db_bucket_id = partition_policy(principal_id)
-                
+
                 # Create empty SQLite file if it does not exist yet
                 if db_bucket_id not in db_buckets:
                     # TODO: generalize so that user can specify name
@@ -51,10 +50,3 @@ class SQLiteSimplePartitioner(Partitioner):
             bucket_con.commit()
             bucket_con.close()
         con.close()
-
-        return
-
-
-
-
-

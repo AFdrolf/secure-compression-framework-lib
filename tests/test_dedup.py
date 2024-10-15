@@ -1,3 +1,5 @@
+"""Tests for multi stream deduplication."""
+
 import hashlib
 import os
 

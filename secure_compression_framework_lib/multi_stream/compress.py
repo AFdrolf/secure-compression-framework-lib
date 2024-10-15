@@ -18,7 +18,7 @@ class CompressionStream:
     def __init__(self, *parameters) -> None:
         pass
 
-    def compress(self, data: bytes) -> bytes:
+    def compress(self, data: bytes) -> None:
         """Child classes must implement this method."""
         raise NotImplementedError
 
@@ -33,7 +33,7 @@ class DecompressionStream:
     def __init__(self, *parameters) -> None:
         pass
 
-    def decompress(self, data: bytes) -> bytes:
+    def decompress(self, data: bytes) -> None:
         """Child classes must implement this method."""
         raise NotImplementedError
 
@@ -56,7 +56,7 @@ class ZlibCompressionStream(CompressionStream):
     def __init__(self, level: int = -1) -> None:
         super().__init__()
         self.compression_object = zlib.compressobj(level=level)
-        self.compressed = b''
+        self.compressed = b""
         self.finished = False
 
     @override
@@ -90,7 +90,7 @@ class ZlibDecompressionStream(DecompressionStream):
     def __init__(self):
         super().__init__()
         self.decompression_object = zlib.decompressobj()
-        self.decompressed = b''
+        self.decompressed = b""
         self.finished = False
 
     @override
@@ -191,19 +191,20 @@ class MSDecompressor:
         """
         self.stream_switch = stream_switch
         for stream_key in stream_switch:
-            if stream_key not in self.decompression_streams: self.decompression_streams[
-                stream_key] = self.stream_type()
+            if stream_key not in self.decompression_streams:
+                self.decompression_streams[stream_key] = self.stream_type()
 
         iterator = iter(range(0, len(compressed_data)))
         stream_key_iter = 0
         to_decompress = b""
         for i in iterator:
-            compressed_chunk = compressed_data[i:i + len(self.delimiter)]
+            compressed_chunk = compressed_data[i : i + len(self.delimiter)]
             if compressed_chunk != self.delimiter:
                 to_decompress += compressed_chunk[0:1]
             else:
                 self.decompression_streams[list(self.decompression_streams.keys())[stream_key_iter]].decompress(
-                    to_decompress)
+                    to_decompress
+                )
                 to_decompress = b""
                 stream_key_iter += 1
                 for _ in range(len(self.delimiter) - 1):
@@ -227,7 +228,7 @@ class MSDecompressor:
             decompressed = b""
             i = pointers_stream[stream]
             while True:
-                compressed_chunk = self.decompression_streams[stream].decompressed[i:i + len(self.delimiter)]
+                compressed_chunk = self.decompression_streams[stream].decompressed[i : i + len(self.delimiter)]
                 if compressed_chunk != self.delimiter:
                     decompressed += compressed_chunk[0:1]
                     i += 1
