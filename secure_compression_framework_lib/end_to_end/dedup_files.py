@@ -1,4 +1,4 @@
-from collections.abc import Callable
+import itertools
 from pathlib import Path
 
 from secure_compression_framework_lib.multi_stream.dedup import checksum_comparison_function, dedup
@@ -27,9 +27,9 @@ def dedup_files_by_name(files_dir: Path) -> list[Path]:
         return Principal(name=file.name.split("_")[0])
 
     partitioner = FileSystemPartitioner(files_dir, example_extract_principal_from_filename, basic_partition_policy)
-    bucketed_files = partitioner.partition()
+    bucketed_files = sorted(partitioner.partition(), key=lambda x: x[0])
     dedup_files = []
-    for bucket, files in bucketed_files.items():
-        bucket_dedup_files = dedup(checksum_comparison_function, files)
+    for label, file_tuples in itertools.groupby(bucketed_files, key=lambda x: x[0]):
+        bucket_dedup_files = dedup(checksum_comparison_function, [f[1] for f in file_tuples])
         dedup_files.extend(bucket_dedup_files)
     return dedup_files

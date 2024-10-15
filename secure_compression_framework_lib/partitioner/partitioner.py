@@ -30,6 +30,10 @@ class Partitioner:
         """Useful in child when data type is known to allow type checking"""
         raise NotImplementedError
 
-    def partition(self) -> dict[str, list[Any]]:
-        """To be implemented by child to handle a specific data format"""
+    def partition(self) -> list[tuple[str, Any]]:
+        """To be implemented by child to handle a specific data format.
+
+        This returns a list of tuples rather than a dict because for e.g. compression if one file has chunks go into
+        different buckets we need to maintain the ordering of the chunks
+        """
         raise NotImplementedError
