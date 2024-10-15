@@ -1,6 +1,5 @@
 """Tests for multi stream deduplication."""
 
-import hashlib
 import os
 
 import pytest
@@ -22,8 +21,6 @@ def scratch_dir(request, tmpdir):
 
 
 def test_dedup_basic(scratch_dir):
-    h = hashlib.sha256
-    chunk_size = 65536
-    comparison_function = lambda file_path: checksum_comparison_function(file_path, h, chunk_size)
+    comparison_function = checksum_comparison_function
     deduped_files = dedup(comparison_function, scratch_dir.listdir())
     assert len(deduped_files) == 2
