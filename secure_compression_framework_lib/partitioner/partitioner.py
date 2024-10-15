@@ -1,17 +1,35 @@
 """Base class for partitioners."""
 
-from typing import Any
+from typing import Any, Callable
+
+from secure_compression_framework_lib.partitioner.access_control import Principal
 
 
 class Partitioner:
-    def __init__(self, data: Any) -> None:
-        # data_to_partition may be bytes (after some other function serializes storage), a string representing a location in storage, etc
+    """Base class for partitioners.
+
+    The one requirement for a partitioner is that it implements a partition function that is data format dependent,
+    which uses the policy attributes to partition the data into buckets which can be passed to downstream functions
+    individually to prevent cross-user data interaction.
+
+    Attributes:
+        data: The data to be partitioned.
+        access_control_policy: Maps data units to Principals
+        partition_policy: Maps Principals to buckets
+    """
+
+    def __init__(
+        self, data: Any, access_control_policy: Callable[[Any], Principal], partition_policy: Callable[[Principal], str]
+    ) -> None:
         self.data = data
+        self.access_control_policy = access_control_policy
+        self.partition_policy = partition_policy
 
-    def partition(self, partition_policy, access_control_policy):
-        # Additional args for a comparison function? E.g., to specify which hash to use?
+    @property
+    def _get_data(self) -> Any:
+        """Useful in child when data type is known to allow type checking"""
+        raise NotImplementedError
 
-        # access_control_policy(data_unit) -> principal label
-        # partition_policy(user) -> bucket for this user
-        # Sam: Think maybe policies should be attributes of class
+    def partition(self) -> dict[str, list[Any]]:
+        """To be implemented by child to handle a specific data format"""
         raise NotImplementedError

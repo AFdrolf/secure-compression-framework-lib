@@ -1,7 +1,7 @@
 """Implements access control functionality for use by partitioner."""
 
-from collections import defaultdict
 from collections.abc import Callable
+from typing import Any
 
 
 class Principal:
@@ -19,36 +19,35 @@ class Principal:
             setattr(self, k, v)
 
     def __setitem__(self, k, v):
-        assert not isinstance(v, dict)
+        assert not isinstance(v, dict)  # Breaks hash
         self.k = v
 
     def __getitem__(self, k):
         return self.k
 
-    def __hash__(self):
-        return hash(self.__dict__)
-
     def __repr__(self):
-        return self.__hash__()
+        return repr(sorted(self.__dict__.items()))
+
+    def __hash__(self):
+        return hash(self.__repr__())
+
+    def __str__(self):
+        return str(self.__hash__())
 
 
-class AccessPolicy:
-    """Maps object to Principal.
-
-    Basic POC implementation is a dict. But we would like this to be a blackbox function provided by application?
-    """
-
-    def __init__(self, views: dict[object, Principal]) -> None:
-        self.views = defaultdict(Principal, views)
-
-    def map(self, o: object) -> Principal:
-        return self.views[o]
+# An access control policy maps a data unit to a principal
+AccessControlPolicy: Callable[[Any], Principal]
 
 
 # A partition policy maps a principal to a bucket label
 PartitionPolicy: Callable[[Principal], str]
 
 
+def basic_partition_policy(p: Principal) -> str:
+    """Partitions based on the principal itself"""
+    return str(p)
+
+
 def attribute_based_partition_policy(p: Principal, attr: str) -> str:
-    """Partitions based on a given attribute e.g. is_contact."""
+    """Partitions based on a given attribute of the principal e.g. is_contact."""
     return str(p.__getattribute__(attr))
