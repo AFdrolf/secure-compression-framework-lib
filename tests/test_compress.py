@@ -51,7 +51,10 @@ def test_compress_diff_labels():
 
 
 def test_compress_blocks():
-    """Test compression handles multiple blocks with different labels."""
+    """Test compression handles multiple blocks with different labels.
+
+    Todo: this test is flaky, something is wrong with multi stream compression
+    """
     data_length = 40
     block_size = 5
     mod = 3
