@@ -11,12 +11,17 @@ class Principal:
 
     Can be instantiated with a dictionary of attributes. Subsequent attributes can be set/updated with p[k] = v, for a
     principal object P.
+
+    __null is a special attribute. A null Principal is used when the data unit is not associated with any Principal.
+    This can be either because no Principal has a view on it, or because the data units can be nested and a data unit
+    actually contains multiple sub data units that different Principals have separate view on.
     """
 
-    def __init__(self, **attr):
+    def __init__(self, null=False, **attr):
         for k, v in attr.items():
             assert not isinstance(v, dict)  # Breaks hash
             setattr(self, k, v)
+        self.__null = null
 
     def __setitem__(self, k, v):
         assert not isinstance(v, dict)  # Breaks hash
@@ -33,6 +38,10 @@ class Principal:
 
     def __str__(self):
         return str(self.__hash__())
+
+    @property
+    def null(self):
+        return self.__null
 
 
 # An access control policy maps a data unit to a principal

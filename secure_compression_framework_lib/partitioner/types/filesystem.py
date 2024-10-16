@@ -10,7 +10,6 @@ class FileSystemPartitioner(Partitioner):
     Attributes:
         data: A Path object for a directory containing files to be partitioned.
         access_control_policy: Maps Path objects to Principals (Callable[[Path], Principal])
-        partition_policy: Maps Principals to buckets
         """
 
     def _get_data(self) -> Path:

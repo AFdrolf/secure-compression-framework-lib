@@ -33,7 +33,7 @@ class Partitioner:
     def partition(self) -> list[tuple[str, Any]]:
         """To be implemented by child to handle a specific data format.
 
-        This returns a list of tuples rather than a dict because for e.g. compression if one file has chunks go into
-        different buckets we need to maintain the ordering of the chunks
+        This returns a list of tuples rather than a dict because for e.g. compression if one file is split into multiple
+        buckets we need to maintain the ordering
         """
         raise NotImplementedError
