@@ -5,7 +5,13 @@ from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 
 class FileSystemPartitioner(Partitioner):
-    """Implements partitioner where the data is a Path object for a directory containing files to be partitioned."""
+    """Implements partitioner for files.
+
+    Attributes:
+        data: A Path object for a directory containing files to be partitioned.
+        access_control_policy: Maps Path objects to Principals (Callable[[Path], Principal])
+        partition_policy: Maps Principals to buckets
+        """
 
     def _get_data(self) -> Path:
         return self.data
