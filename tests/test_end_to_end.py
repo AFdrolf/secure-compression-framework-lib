@@ -31,3 +31,6 @@ def test_dedup_files_by_name_basic(scratch_dir):
     assert ("bob_attachment_1_d" in deduped_filenames) ^ ("bob_attachment_3_d" in deduped_filenames)
     assert "alice_attachment_1" in deduped_filenames
     assert "alice_attachment_2_d" in deduped_filenames
+
+
+# TODO (andres): end-to-end tests for sqlite, xml simple.

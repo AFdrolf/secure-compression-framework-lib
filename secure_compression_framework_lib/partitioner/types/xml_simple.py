@@ -1,3 +1,4 @@
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 import sys
@@ -13,20 +14,22 @@ class XMLSimplePartitioner(Partitioner):
 
     def partition(self, partition_policy, access_control_policy):
         db_buckets = {}
+        db_bucket_paths = []
 
         tree = ET.parse(self.db_path)
         root = tree.getroot()
 
         # First, iterate through all XML elements
         for xml_element in root.findall(".//*"):
-            # TODO: pre-process element to make it compatible with access control policy (maybe just get the primary key)?
-            principal_id = access_control_policy(xml_element)
-            if principal_id == None:
+            principal = access_control_policy(xml_element)
+            if principal == None:
                 continue
-            db_bucket_id = partition_policy(principal_id)
+            db_bucket_id = partition_policy(principal)
 
             # Create empty XML file if it does not exist yet
             if db_bucket_id not in db_buckets:
+                db_bucket_path = str(db_bucket_id) + self.data
+                db_bucket_paths.append(Path(db_bucket_path))
                 db_bucket_root = ET.Element(db_bucket_id)
                 db_buckets[db_bucket_id] = db_bucket_root
             else:
@@ -36,10 +39,11 @@ class XMLSimplePartitioner(Partitioner):
             db_bucket_root.append(xml_element)
 
         for db_bucket_id, db_bucket_root in db_buckets.items():
-            bucket_tree = ET.ElementTree(db_bucket_root)
-            # TODO: generalize so that user can specify name
+            db_bucket_tree = ET.ElementTree(db_bucket_root)
             db_bucket_path = db_bucket_id + self.db_path
-            bucket_tree.write(db_bucket_path, encoding="utf-8", xml_declaration=True)
+            db_bucket_tree.write(db_bucket_path, encoding="utf-8", xml_declaration=True)
+
+        return db_bucket_paths
 
 # For testing, delete later
 import os

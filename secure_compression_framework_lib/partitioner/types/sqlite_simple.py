@@ -1,3 +1,4 @@
+from pathlib import Path
 import sqlite3
 
 import sys
@@ -8,13 +9,17 @@ from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 
 class SQLiteSimplePartitioner(Partitioner):
-    def __init__(self, db_path):
-        self.db_path = db_path
+    """Implements partitioner where the data is a Path object for the SQLite database file to be partitioned."""
 
-    def partition(self, partition_policy, access_control_policy):
+    def _get_data(self) -> Path:
+        return self.data
+
+    def partition(self) -> list[Path]:
+        """Creates a new SQLite database (serialized using SQLite's database file format) for each partition. Ouputs the list of paths for the new database files."""
         db_buckets = {}
+        db_bucket_paths = []
 
-        con = sqlite3.connect(self.db_path)
+        con = sqlite3.connect(self.data)
         cur = con.cursor()
 
         # Save schema to later create identical `bucket' DBs
@@ -28,34 +33,35 @@ class SQLiteSimplePartitioner(Partitioner):
             table_name = table[0]
             cur.execute(f"SELECT * FROM {table_name};")
             for row in cur:
-                # TODO: pre-process row to make it compatible with access control policy (maybe just get the primary key)?
-                principal_id = access_control_policy(table, row)
-                if principal_id == None:
+                principal = self.access_control_policy(table, row)
+                if principal == None:
                     continue
-                db_bucket_id = partition_policy(principal_id)
+                db_bucket_id = self.partition_policy(principal)
 
                 # Create empty SQLite file if it does not exist yet
                 if db_bucket_id not in db_buckets:
-                    # TODO: generalize so that user can specify name
-                    db_bucket_path = str(db_bucket_id) + self.db_path
-                    bucket_con = sqlite3.connect(db_bucket_path)
-                    bucket_cur = bucket_con.cursor()
+                    db_bucket_path = str(db_bucket_id) + self.data
+                    db_bucket_paths.append(Path(db_bucket_path))
+                    db_bucket_con = sqlite3.connect(db_bucket_path)
+                    db_bucket_cur = db_bucket_con.cursor()
                     for table_schema in schema:
                         # sqlite_sequence table gets created automatically; error is thrown if created manually
                         if "sqlite_sequence" not in table_schema[0]: 
-                            bucket_cur.execute(table_schema[0])
-                    db_buckets[db_bucket_id] = (bucket_con, bucket_cur)
+                            db_bucket_cur.execute(table_schema[0])
+                    db_buckets[db_bucket_id] = (db_bucket_con, db_bucket_cur)
                 else:
-                    bucket_cur = db_buckets[db_bucket_id][0]
+                    db_bucket_cur = db_buckets[db_bucket_id][0]
 
                 # Then, add row to its respective bucket DB
-                bucket_cur.execute(f"INSERT INTO {table_name} VALUES ({', '.join('?' * len(row))});", row)
+                db_bucket_cur.execute(f"INSERT INTO {table_name} VALUES ({', '.join('?' * len(row))});", row)
 
-        # Close connections to DB
-        for bucket_con, _ in db_buckets.values():
-            bucket_con.commit()
-            bucket_con.close()
+        # Close connections to DBs
+        for db_bucket_con, _ in db_buckets.values():
+            db_bucket_con.commit()
+            db_bucket_con.close()
         con.close()
+
+        return db_bucket_paths
 
 
 # For testing, delete later

@@ -49,7 +49,7 @@ def checksum_comparison_function(
 
     Todo:
     ----
-        Could make more efficient by checking size, then each chunk chunk as it is read
+        Could make more efficient by checking size, then each chunk as it is read
 
     """
     h = hash_func()
