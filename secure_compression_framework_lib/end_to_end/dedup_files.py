@@ -6,6 +6,14 @@ from secure_compression_framework_lib.partitioner.access_control import Principa
 from secure_compression_framework_lib.partitioner.types.filesystem import FileSystemPartitioner
 
 
+def example_extract_principal_from_filename(file: Path) -> Principal:
+    """Example access control policy function.
+
+    Assumes the principal name is the first field of an underscore separated filename
+    """
+    return Principal(name=file.name.split("_")[0])
+
+
 def dedup_files_by_name(files_dir: Path) -> list[Path]:
     """Implements a basic deduplication scenario where the principal for a file is encoded in the filename.
 
@@ -18,13 +26,6 @@ def dedup_files_by_name(files_dir: Path) -> list[Path]:
     Returns:
         A deduplicated list of files in files_dir. No guarantees about which file will be kept in case of duplicates.
     """
-
-    def example_extract_principal_from_filename(file: Path) -> Principal:
-        """Example access control policy function.
-
-        Assumes the principal name is the first field of an underscore separated filename
-        """
-        return Principal(name=file.name.split("_")[0])
 
     partitioner = FileSystemPartitioner(files_dir, example_extract_principal_from_filename, basic_partition_policy)
     bucketed_files = sorted(partitioner.partition(), key=lambda x: x[0])
