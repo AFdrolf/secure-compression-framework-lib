@@ -53,7 +53,7 @@ PartitionPolicy: Callable[[Principal], str]
 
 
 def basic_partition_policy(p: Principal) -> str:
-    """Partitions based on the principal itself"""
+    """Partitions based on the principal itself."""
     return str(p)
 
 

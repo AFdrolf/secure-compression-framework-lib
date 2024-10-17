@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 from xml.etree import ElementTree
 
 from secure_compression_framework_lib.partitioner.access_control import Principal
@@ -15,21 +15,22 @@ class XMLDataUnit:
     the element. To see why this is necessary imagine the case where an XML file has nested elements that both have the
     name "user".
     """
+
     element: ElementTree.Element
-    context: list[ElementTree.Element] # List of parent elements, starting from root
+    context: list[ElementTree.Element]  # List of parent elements, starting from root
 
 
 def generate_start_tag(element: ElementTree.Element) -> str:
-    """Generates the start tag for an XML element."""
+    """Generate the start tag for an XML element."""
     tag = f"<{element.tag}"
     for key, value in element.attrib.items():
-        tag += f" {key}=\"{value}\""
+        tag += f' {key}="{value}"'
     tag += f">{element.text}"
     return tag
 
 
 def generate_end_tag(element: ElementTree.Element) -> str:
-    """Generates the end tag for an XML element."""
+    """Generate the end tag for an XML element."""
     return f"</{element.tag}>\n"
 
 
@@ -37,12 +38,16 @@ class XmlAdvancedPartitioner(Partitioner):
     """Implements partitioner where the data is a Path object for a file containing XML to be partitioned.
 
     Attributes:
+    ----------
         data: A Path object for an XML file
         access_control_policy: Maps XMLDataUnit objects to Principals (Callable[[XMLDataUnit], Principal])
 
     Todo:
+    ----
         We can provide a helper function that accepts a xpath-like string to generate an access control function
+
     """
+
     def _get_data(self) -> Path:
         return self.data
 

@@ -1,8 +1,8 @@
-from pathlib import Path
-import xml.etree.ElementTree as ET
-
 import sys
-sys.path.append(sys.path[0] + '/../../..')
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+sys.path.append(sys.path[0] + "/../../..")
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 # TODO: we may need to make this code more efficient to deal with large databases.
@@ -45,20 +45,23 @@ class XMLSimplePartitioner(Partitioner):
 
         return db_bucket_paths
 
+
 # For testing, delete later
 import os
+
 
 def create_messages_xml(file_name):
     """Create an XML file with a messages structure."""
     # Create the root element
     root = ET.Element("messages")
-    
+
     # Create an ElementTree object
     tree = ET.ElementTree(root)
 
     # Write the XML file
-    with open(file_name, 'wb') as xml_file:
+    with open(file_name, "wb") as xml_file:
         tree.write(xml_file)
+
 
 def add_message_to_xml(file_name, gid, from_me, content):
     """Add a message entry to the XML file."""
@@ -71,20 +74,20 @@ def add_message_to_xml(file_name, gid, from_me, content):
 
     # Create a new message element
     message = ET.Element("message")
-    
+
     # Generate a new id based on the current number of messages
     message_id = len(root.findall("message")) + 1
-    
+
     # Set the attributes for the message
     id_elem = ET.SubElement(message, "id")
     id_elem.text = str(message_id)
-    
+
     gid_elem = ET.SubElement(message, "gid")
     gid_elem.text = str(gid)
-    
+
     from_me_elem = ET.SubElement(message, "from_me")
     from_me_elem.text = str(from_me)
-    
+
     content_elem = ET.SubElement(message, "content")
     content_elem.text = content
 
@@ -93,38 +96,38 @@ def add_message_to_xml(file_name, gid, from_me, content):
 
     # Write the updated tree back to the file
     tree = ET.ElementTree(root)
-    with open(file_name, 'wb') as xml_file:
+    with open(file_name, "wb") as xml_file:
         tree.write(xml_file)
 
 
 if __name__ == "__main__":
-    import os
     import glob
+    import os
 
     file_type = "*.xml"
 
     for file_path in glob.glob(file_type):
         os.remove(file_path)
 
-    db_name = 'messages.xml'
+    db_name = "messages.xml"
     create_messages_xml(db_name)
 
     # Params: db_name, gid, from_me, content
-    add_message_to_xml(db_name, 1, 1, '1Hello, World!')
-    add_message_to_xml(db_name, 1, 1, '2Hello, World!')
-    add_message_to_xml(db_name, 2, 1, '3Hello, World!')
-    add_message_to_xml(db_name, 7, 1, '4Hello, World!')
-    add_message_to_xml(db_name, 7, 1, '5Hello, World!')
-    add_message_to_xml(db_name, 7, 1, '7Hello, World!')
+    add_message_to_xml(db_name, 1, 1, "1Hello, World!")
+    add_message_to_xml(db_name, 1, 1, "2Hello, World!")
+    add_message_to_xml(db_name, 2, 1, "3Hello, World!")
+    add_message_to_xml(db_name, 7, 1, "4Hello, World!")
+    add_message_to_xml(db_name, 7, 1, "5Hello, World!")
+    add_message_to_xml(db_name, 7, 1, "7Hello, World!")
 
     partitioner = XMLSimplePartitioner(db_name)
 
     def access(element):
         if element.tag == "message":
-            return element.find('gid').text
+            return element.find("gid").text
         else:
             return "metadata"
-    
+
     def partition_policy(id):
         return id
 

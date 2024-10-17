@@ -1,6 +1,7 @@
 """Base class for partitioners."""
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from secure_compression_framework_lib.partitioner.access_control import Principal
 
@@ -12,10 +13,12 @@ class Partitioner:
     which uses the policy attributes to partition the data into buckets which can be passed to downstream functions
     individually to prevent cross-user data interaction.
 
-    Attributes:
+    Attributes
+    ----------
         data: The data to be partitioned.
         access_control_policy: Maps data units to Principals
         partition_policy: Maps Principals to buckets
+
     """
 
     def __init__(
@@ -27,7 +30,7 @@ class Partitioner:
 
     @property
     def _get_data(self) -> Any:
-        """Useful in child when data type is known to allow type checking"""
+        """Useful in child when data type is known to allow type checking."""
         raise NotImplementedError
 
     def partition(self) -> list[tuple[str, Any]]:

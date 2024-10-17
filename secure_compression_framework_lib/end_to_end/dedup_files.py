@@ -21,12 +21,14 @@ def dedup_files_by_name(files_dir: Path) -> list[Path]:
     This is the access control policy used by our partitioner
 
     Args:
+    ----
         files_dir: Directory containing files to be deduplicated.
 
     Returns:
+    -------
         A deduplicated list of files in files_dir. No guarantees about which file will be kept in case of duplicates.
-    """
 
+    """
     partitioner = FileSystemPartitioner(files_dir, example_extract_principal_from_filename, basic_partition_policy)
     bucketed_files = sorted(partitioner.partition(), key=lambda x: x[0])
     dedup_files = []

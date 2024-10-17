@@ -1,9 +1,7 @@
 from pathlib import Path
 from xml.etree import ElementTree
 
-from secure_compression_framework_lib.partitioner.access_control import Principal
-
-from secure_compression_framework_lib.partitioner.access_control import basic_partition_policy
+from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy
 from secure_compression_framework_lib.partitioner.types.xml_advanced import XmlAdvancedPartitioner, XMLDataUnit
 
 
@@ -27,14 +25,13 @@ def example_extract_principal_from_xml(xml_du: XMLDataUnit) -> Principal:
 
 def test_partitioner_xml_advanced():
     path = Path(__file__).parent / "examples/books.xml"
-    partitioner = XmlAdvancedPartitioner(
-        path,
-        example_extract_principal_from_xml,
-        basic_partition_policy
-    )
+    partitioner = XmlAdvancedPartitioner(path, example_extract_principal_from_xml, basic_partition_policy)
     out = partitioner.partition()
     assert len(out) == 15
-    assert out[0] == (str(Principal(null=True)), "<catalog>\n   ".encode("utf-8"))
-    assert out[-1] == (str(Principal(null=True)), "</catalog>\n".encode("utf-8"))
+    assert out[0] == (str(Principal(null=True)), b"<catalog>\n   ")
+    assert out[-1] == (str(Principal(null=True)), b"</catalog>\n")
     book1_element = ElementTree.parse(path).getroot().find(".//book")
-    assert out[1] == (str(Principal(first_name="Matthew", last_name="Gambardella")), ElementTree.tostring(book1_element))
+    assert out[1] == (
+        str(Principal(first_name="Matthew", last_name="Gambardella")),
+        ElementTree.tostring(book1_element),
+    )

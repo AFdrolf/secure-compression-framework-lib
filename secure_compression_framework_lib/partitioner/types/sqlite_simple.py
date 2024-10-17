@@ -1,8 +1,8 @@
-from pathlib import Path
 import sqlite3
-
 import sys
-sys.path.append(sys.path[0] + '/../../..')
+from pathlib import Path
+
+sys.path.append(sys.path[0] + "/../../..")
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 # TODO: we may need to make this code more efficient to deal with large databases.
@@ -46,7 +46,7 @@ class SQLiteSimplePartitioner(Partitioner):
                     db_bucket_cur = db_bucket_con.cursor()
                     for table_schema in schema:
                         # sqlite_sequence table gets created automatically; error is thrown if created manually
-                        if "sqlite_sequence" not in table_schema[0]: 
+                        if "sqlite_sequence" not in table_schema[0]:
                             db_bucket_cur.execute(table_schema[0])
                     db_buckets[db_bucket_id] = (db_bucket_con, db_bucket_cur)
                 else:
@@ -66,6 +66,7 @@ class SQLiteSimplePartitioner(Partitioner):
 
 # For testing, delete later
 
+
 def create_messages_db(db_name):
     """Create an SQLite database with a messages table."""
     # Connect to the SQLite database (it will be created if it doesn't exist)
@@ -75,62 +76,66 @@ def create_messages_db(db_name):
     cursor = conn.cursor()
 
     # Create the messages table
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             gid INTEGER,
             from_me INTEGER,
             content TEXT
         )
-    ''')
+    """)
 
     # Commit the changes and close the connection
     conn.commit()
     conn.close()
 
+
 def insert_message(db_name, gid, from_me, content):
     """Insert a new message into the messages table."""
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
-    
-    cursor.execute('''
+
+    cursor.execute(
+        """
         INSERT INTO messages (gid, from_me, content)
         VALUES (?, ?, ?)
-    ''', (gid, from_me, content))
-    
+    """,
+        (gid, from_me, content),
+    )
+
     conn.commit()
     conn.close()
 
+
 if __name__ == "__main__":
-    import os
     import glob
+    import os
 
     file_type = "*.db"
 
     for file_path in glob.glob(file_type):
         os.remove(file_path)
 
-    db_name = 'messages.db'
+    db_name = "messages.db"
     create_messages_db(db_name)
 
     # Params: db_name, gid, from_me, content
-    insert_message(db_name, 1, 1, 'Hello, World!')
-    insert_message(db_name, 1, 1, 'Hello, World!')
-    insert_message(db_name, 2, 1, 'Hello, World!')
-    insert_message(db_name, 7, 1, 'Hello, World!')
-    insert_message(db_name, 7, 1, 'Hello, World!')
-    insert_message(db_name, 7, 1, 'Hello, World!')
+    insert_message(db_name, 1, 1, "Hello, World!")
+    insert_message(db_name, 1, 1, "Hello, World!")
+    insert_message(db_name, 2, 1, "Hello, World!")
+    insert_message(db_name, 7, 1, "Hello, World!")
+    insert_message(db_name, 7, 1, "Hello, World!")
+    insert_message(db_name, 7, 1, "Hello, World!")
 
     partitioner = SQLiteSimplePartitioner(db_name)
 
     def access(table, row):
-        if table[0]=="messages":
+        if table[0] == "messages":
             return row[1]
         else:
             return "metadata"
-    
+
     def partition_policy(id):
         return id
 
     partitioner.partition(partition_policy, access)
-
