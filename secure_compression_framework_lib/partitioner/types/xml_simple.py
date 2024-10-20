@@ -1,6 +1,7 @@
+import os
+from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
-from pathlib import Path
 
 sys.path.append(sys.path[0] + "/../../..")
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
@@ -9,22 +10,19 @@ from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 
 class XMLSimplePartitioner(Partitioner):
-    def __init__(self, db_path):
-        self.db_path = db_path
-
     def partition(self, partition_policy, access_control_policy):
         db_buckets = {}
         db_bucket_paths = []
 
-        tree = ET.parse(self.db_path)
+        tree = ET.parse(self.data)
         root = tree.getroot()
 
         # First, iterate through all XML elements
         for xml_element in root.findall(".//*"):
-            principal = access_control_policy(xml_element)
+            principal = self.access_control_policy(xml_element)
             if principal == None:
                 continue
-            db_bucket_id = partition_policy(principal)
+            db_bucket_id = self.partition_policy(principal)
 
             # Create empty XML file if it does not exist yet
             if db_bucket_id not in db_buckets:
@@ -40,7 +38,9 @@ class XMLSimplePartitioner(Partitioner):
 
         for db_bucket_id, db_bucket_root in db_buckets.items():
             db_bucket_tree = ET.ElementTree(db_bucket_root)
-            db_bucket_path = db_bucket_id + self.db_path
+            path_parts = self.data.split(os.path.sep)
+            path_parts[-1] = str(db_bucket_id) + path_parts[-1]
+            db_bucket_path = os.path.sep.join(path_parts)
             db_bucket_tree.write(db_bucket_path, encoding="utf-8", xml_declaration=True)
 
         return db_bucket_paths

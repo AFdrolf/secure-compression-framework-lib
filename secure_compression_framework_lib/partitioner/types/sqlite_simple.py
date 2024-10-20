@@ -1,5 +1,6 @@
-from pathlib import Path
 from dataclasses import dataclass
+import os
+from pathlib import Path
 import sqlite3
 import sys
 
@@ -13,8 +14,8 @@ from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 class SQLiteDataUnit:
     """An SQLiteDataUnit is the unit which is mapped to a Principal.
 
-    The unit we actually want to map to a Principal is a cell in the database, but to do this mapping we need some context for
-    the cell (e.g., what table it belongs to)
+    The unit we actually want to map to a Principal is a row in the database, but to do this mapping we need some context for
+    the row (i.e., what table it belongs to)
     """
 
     row: tuple
@@ -49,11 +50,13 @@ class SQLiteSimplePartitioner(Partitioner):
                 principal = self.access_control_policy(data_unit)
                 if principal == None:
                     continue
-                db_bucket_id = self.partition_policy(data_unit)
+                db_bucket_id = self.partition_policy(principal)
 
                 # Create empty SQLite file if it does not exist yet
                 if db_bucket_id not in db_buckets:
-                    db_bucket_path = str(db_bucket_id) + self.data
+                    path_parts = self.data.split(os.path.sep)
+                    path_parts[-1] = str(db_bucket_id) + path_parts[-1]
+                    db_bucket_path = os.path.sep.join(path_parts)
                     db_bucket_paths.append(Path(db_bucket_path))
                     db_bucket_con = sqlite3.connect(db_bucket_path)
                     db_bucket_cur = db_bucket_con.cursor()
@@ -75,18 +78,3 @@ class SQLiteSimplePartitioner(Partitioner):
         con.close()
 
         return db_bucket_paths
-
-
-if __name__ == "__main__":
-    partitioner = SQLiteSimplePartitioner(db_name)
-
-    def access(table, row):
-        if table[0] == "messages":
-            return row[1]
-        else:
-            return "metadata"
-
-    def partition_policy(id):
-        return id
-
-    partitioner.partition(partition_policy, access)
