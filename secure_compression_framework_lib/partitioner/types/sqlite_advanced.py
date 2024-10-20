@@ -7,7 +7,7 @@ HEADER_SIZE_BYTES = 100
 HEADER_STRING = "SQLite format 3\000"
 
 
-class SQLiteSimplePartitioner(Partitioner):
+class SQLiteAdvancedPartitioner(Partitioner):
     """Implements partitioner where the data is a Path object for the SQLite database file to be partitioned."""
 
     def _get_data(self) -> Path:
