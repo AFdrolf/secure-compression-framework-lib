@@ -16,8 +16,11 @@ class XMLDataUnit:
     name "user".
     """
 
-    element: ElementTree.Element
     context: list[ElementTree.Element]  # List of parent elements, starting from root
+
+    @property
+    def element(self) -> ElementTree.Element:
+        return self.context[-1]
 
 
 def generate_start_tag(element: ElementTree.Element) -> str:
@@ -31,7 +34,11 @@ def generate_start_tag(element: ElementTree.Element) -> str:
 
 def generate_end_tag(element: ElementTree.Element) -> str:
     """Generate the end tag for an XML element."""
-    return f"</{element.tag}>\n"
+    if element.tail:
+        tail = element.tail
+    else:
+        tail = "\n"
+    return f"</{element.tag}>{tail}"
 
 
 class XmlAdvancedPartitioner(Partitioner):
@@ -58,33 +65,23 @@ class XmlAdvancedPartitioner(Partitioner):
     def partition(self) -> list[tuple[str, bytes]]:
         bucketed_data = []
         parent_stack = []
-        target_event = None
         for event, element in ElementTree.iterparse(self._get_data(), events=["start", "end"]):
-            if target_event and (event, element) != target_event:
-                continue
+            if event == "start":
+                tag = generate_start_tag(element)
+                parent_stack.append(element)
+                data_unit = XMLDataUnit(parent_stack)
             else:
-                target_event = None
-            data_unit = XMLDataUnit(element, parent_stack)
+                tag = generate_end_tag(element)
+                parent_stack.pop()
+                data_unit = XMLDataUnit([*parent_stack, element])
+
             principal = self.access_control_policy(data_unit)
             bucket = self.partition_policy(principal)
-            if event == "start":
-                if principal.null:
-                    # This indicates that the element has child elements that map to different principals
-                    # Add just the start tag to the null bucket and check children
-                    parent_stack.append(element)
-                    start_tag = generate_start_tag(element)
-                    bucketed_data.append((bucket, start_tag.encode("utf-8")))
-                else:
-                    # If we have a non-null principal we can wait for the whole element to be parsed and bucket it
-                    # Ignore events until we come to end of this element
-                    target_event = ("end", element)
-            elif event == "end":
-                if principal.null:
-                    # We already bucketed the start tag, just add end tag to null bucket
-                    parent_stack.pop()
-                    end_tag = generate_end_tag(element)
-                    bucketed_data.append((bucket, end_tag.encode("utf-8")))
-                else:
-                    # Now that we have the whole element, bucket it
-                    bucketed_data.append((bucket, ElementTree.tostring(element)))
+
+            if not bucketed_data or bucket != bucketed_data[-1][0]:
+                # New bucket
+                bucketed_data.append((bucket, bytearray(tag.encode("utf-8"))))
+            else:
+                bucketed_data[-1][1].extend(tag.encode("utf-8"))
+
         return bucketed_data
