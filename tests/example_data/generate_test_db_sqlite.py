@@ -55,16 +55,3 @@ def generate_test_db_sqlite(output_dir, delete_old=True):
     insert_message(db_name, 7, 1, "Hello, World!")
 
     return db_name
-
-# For testing; delete later.
-db_name = "/Users/andresfg/Desktop/Cornell/Research/secure-processing-framework-project/secure-compression-framework-lib/tests/example_data/test_messages.db"
-con = sqlite3.connect(db_name)
-cur = con.cursor()
-cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-tables = cur.fetchall()
-for table in tables:
-    table_name = table[0]
-    cur.execute(f"SELECT * FROM {table_name};")
-    for row in cur:
-        print(row, type(row))
-con.close()
