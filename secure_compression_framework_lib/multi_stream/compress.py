@@ -116,7 +116,11 @@ class MSCompressor:
     ----------
         stream_type: A CompressionStream instantiation
         stream_params: Parameters for CompressionStream
-        delimiter: A byte sequence inserted between every call to compress
+        stream_switch_delimiter: A byte sequence inserted between every call to compress as an indication to switch
+        streams while decompressing (currently this must be a byte sequence not found in the data to be compressed).
+        This sequence should not include duplicate bytes - imagine we use '||', this would cause an error because if
+        a '|' in the data ends up next to the delimiter we cannot determine where the true delimiter is
+        output_delimiter: A byte sequence used to separate each compression stream in the output
 
     Todo:
     ----
@@ -126,12 +130,21 @@ class MSCompressor:
 
     """
 
-    def __init__(self, stream_type: type[CompressionStream], delimiter: bytes = b"||", **stream_params) -> None:
+    def __init__(
+        self,
+        stream_type: type[CompressionStream],
+        stream_switch_delimiter: bytes = b"[|",
+        output_delimiter: bytes = b"\x7f",
+        **stream_params,
+    ) -> None:
         self.stream_type = stream_type
         self.stream_params = stream_params
         self.compression_streams = {}
         self.stream_switch = []
-        self.delimiter = delimiter
+        if len(stream_switch_delimiter) != len(set(stream_switch_delimiter)):
+            raise ValueError("Delimiter should be unique characters")
+        self.stream_switch_delimiter = stream_switch_delimiter
+        self.output_delimiter = output_delimiter
 
     def compress(self, stream_key: str, data: bytes) -> None:
         """Compress data to a given stream.
@@ -141,12 +154,28 @@ class MSCompressor:
             stream_key: Label for which compression stream to be used
             data: Data to be compressed
 
+        Todo:
+        ----
+            Escape delimiter when found in data to be compressed
         """
+        if self.stream_switch_delimiter in data:
+            raise ValueError("Delimiter found in data")
+
         if not stream_key in self.compression_streams:
             self.compression_streams[stream_key] = self.stream_type(*self.stream_params)
 
         self.stream_switch.append(stream_key)
-        self.compression_streams[stream_key].compress(data + self.delimiter)
+        self.compression_streams[stream_key].compress(data + self.stream_switch_delimiter)
+
+    def encode_remove_output_delimiter(self, data: bytes) -> bytes:
+        """Removes output delimiter from compressed data.
+
+        If the output delimiter shows up in compressed data we will interpret this as changing
+        streams and the header check will fail. Here we replace a chosen delimiter byte by a two byte escape sequence
+        and replace the prefix of the escape sequence by a different two byte sequence as suggested in
+        https://stackoverflow.com/questions/62585234/can-zlib-compressed-output-avoid-using-certain-byte-value
+        """
+        return data.replace(b"Z", b"ZZ").replace(self.output_delimiter, b"Z:")
 
     def finish(self) -> tuple[bytes, list[str]]:
         """Flush all compression streams.
@@ -157,9 +186,9 @@ class MSCompressor:
 
         """
         compressed_all = b""
-        for compression_stream in self.compression_streams.values():
-            compressed_all += compression_stream.finish()
-            compressed_all += self.delimiter
+        for k, compression_stream in self.compression_streams.items():
+            compressed_all += self.encode_remove_output_delimiter(compression_stream.finish())
+            compressed_all += self.output_delimiter
 
         return compressed_all, self.stream_switch
 
@@ -170,7 +199,11 @@ class MSDecompressor:
     Attributes:
     ----------
         stream_type: A DecompressionStream instantiation
-        delimiter: The byte sequence used to separate streams
+        stream_switch_delimiter: A byte sequence inserted between every call to compress as an indication to switch
+        streams while decompressing (currently this must be a byte sequence not found in the data to be compressed).
+        This sequence should not include duplicate bytes - imagine we use '||', this would cause an error because if
+        a '|' in the data ends up next to the delimiter we cannot determine where the true delimiter is
+        output_delimiter: A byte sequence used to separate each compression stream in the output
 
     Todo:
     ----
@@ -178,11 +211,37 @@ class MSDecompressor:
 
     """
 
-    def __init__(self, stream_type: type[DecompressionStream], delimiter: bytes = b"||") -> None:
+    def __init__(
+        self, stream_type: type[DecompressionStream], stream_switch_delimiter: bytes = b"[|", output_delimiter=b"\x7f"
+    ) -> None:
         self.stream_type = stream_type
         self.decompression_streams = {}
-        self.delimiter = delimiter
+        if len(stream_switch_delimiter) != len(set(stream_switch_delimiter)):
+            raise ValueError("Delimiter should be unique characters")
+        self.stream_switch_delimiter = stream_switch_delimiter
         self.stream_switch = None
+        self.output_delimiter = output_delimiter
+
+    def decode_add_output_delimiter(self, data: bytes) -> bytes:
+        """Adds output delimiter occurrences to compressed data.
+
+        In MSCompressor we escaped the output delimiter so that it did not occur in the compressed data and could be
+        used as a delimiter. This function parses data to find the escape sequences and replaces occurrences.
+        """
+        output = []
+        pair = False
+        for b in data:
+            if pair:
+                # Previous byte was escape prefix
+                # 90 -> b'Z'
+                o = 90 if b == 90 else int.from_bytes(self.output_delimiter)
+                output.append(o)
+                pair = False
+            elif b == 90:
+                pair = True
+            else:
+                output.append(b)
+        return bytes(output)
 
     def decompress(self, compressed_data: bytes, stream_switch: list[str]) -> None:
         """Decompress until unused_data is found, then start a new DecompressionStream.
@@ -198,16 +257,16 @@ class MSDecompressor:
         stream_key_iter = 0
         to_decompress = b""
         for i in iterator:
-            compressed_chunk = compressed_data[i : i + len(self.delimiter)]
-            if compressed_chunk != self.delimiter:
+            compressed_chunk = compressed_data[i : i + len(self.output_delimiter)]
+            if compressed_chunk != self.output_delimiter:
                 to_decompress += compressed_chunk[0:1]
             else:
                 self.decompression_streams[list(self.decompression_streams.keys())[stream_key_iter]].decompress(
-                    to_decompress
+                    self.decode_add_output_delimiter(to_decompress)
                 )
                 to_decompress = b""
                 stream_key_iter += 1
-                for _ in range(len(self.delimiter) - 1):
+                for _ in range(len(self.output_delimiter) - 1):
                     next(iterator, None)
 
     def finish(self) -> bytes:
@@ -228,12 +287,14 @@ class MSDecompressor:
             decompressed = b""
             i = pointers_stream[stream]
             while True:
-                compressed_chunk = self.decompression_streams[stream].decompressed[i : i + len(self.delimiter)]
-                if compressed_chunk != self.delimiter:
+                compressed_chunk = self.decompression_streams[stream].decompressed[
+                    i : i + len(self.stream_switch_delimiter)
+                ]
+                if compressed_chunk != self.stream_switch_delimiter:
                     decompressed += compressed_chunk[0:1]
                     i += 1
                 else:
                     decompressed_ordered += decompressed
-                    pointers_stream[stream] = i + len(self.delimiter)
+                    pointers_stream[stream] = i + len(self.stream_switch_delimiter)
                     break
         return decompressed_ordered

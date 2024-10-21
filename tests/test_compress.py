@@ -2,6 +2,8 @@
 
 import os
 
+import pytest
+
 from secure_compression_framework_lib.multi_stream.compress import (
     MSCompressor,
     MSDecompressor,
@@ -50,21 +52,22 @@ def test_compress_diff_labels():
     assert len(c_diff) > len(c_same)
 
 
-def test_compress_blocks():
-    """Test compression handles multiple blocks with different labels.
-
-    Todo: this test is flaky, something is wrong with multi stream compression
-    """
-    data_length = 40
-    block_size = 5
-    mod = 3
-
-    rdata = os.urandom(data_length)
+@pytest.mark.parametrize(
+    "rdata",
+    [
+        os.urandom(30),
+        b"test\|testtesttest",
+        b"\xdeb\x16:\xfe\xdd\xd7\xfd\x01\xa9t\xe5:BC\x9cCwy\x0e\x9f\x07T\xd0N\xf1\xa7\xda;H\xc2\xa7\xa8\xda\xb7\xba\xf6\xb5\xf8\xaf\x94?\x06\xb69\x97|3\xccK",
+    ],
+)
+def test_compress_blocks(rdata):
+    """Test compression handles multiple blocks with different labels."""
     msc = MSCompressor(ZlibCompressionStream)
     msd = MSDecompressor(ZlibDecompressionStream)
 
     def blocks_to_resources(data):
         """Yield data block if it is an even block number, or else yield None."""
+        block_size = 5
         block_number = 0
         while block_number * block_size < len(data):
             i = block_number * block_size
@@ -81,4 +84,4 @@ def test_compress_blocks():
     msd.decompress(compressed_data, stream_switch)
     decompressed_data = msd.finish()
 
-    assert rdata == decompressed_data
+    assert decompressed_data == rdata
