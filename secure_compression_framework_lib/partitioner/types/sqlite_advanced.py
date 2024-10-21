@@ -129,6 +129,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
             return cell_rowid, record_data
         
     def _find_table_name(self, cur, rowid, record_data):
+        # WIP
          # Get the list of tables in the database
         cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cur.fetchall()
