@@ -1,6 +1,8 @@
 from collections import defaultdict
+from dataclasses import dataclass
 import os
 from pathlib import Path
+import sqlite3
 import struct
 
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
@@ -26,6 +28,17 @@ PAGE_TYPES = {
     "index_interior": 0x02,
 }
 
+@dataclass
+class SQLiteDataUnit:
+    """An SQLiteDataUnit is the unit which is mapped to a Principal.
+
+    The unit we actually want to map to a Principal is a row in the database, but to do this mapping we need some context for
+    the row (i.e., what table it belongs to)
+    """
+
+    row: tuple
+    table_name: str
+
 class SQLiteAdvancedPartitioner(Partitioner):
     """Implements partitioner where the data is a Path object for the SQLite database file to be partitioned."""
 
@@ -33,8 +46,10 @@ class SQLiteAdvancedPartitioner(Partitioner):
         return self.data
 
     def partition(self) -> list[Path]:
-        buckets = defaultdict(bytes)
-        bucket_paths = []
+        self.buckets = defaultdict(bytes)
+
+        con = sqlite3.connect(self.data)
+        cur = con.cursor()
 
         db_size = os.path.getsize(self.data)
         with open(self.data, "rb") as f:
@@ -46,7 +61,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
             free_list_first_page = header[HEADER_INFO_POSITIONS["freelist_first_page_number_start"]:HEADER_INFO_POSITIONS["freelist_first_page_number_start"]+1]
 
             # We need to keep track of freelist and overflow pages, since there is no identifier for these
-            # TODO: maybe we do not actually care about freelist pages? 
+            # TODO: maybe we do not actually care about freelist pages? Also, fix: overflow page may technically appear before the parent page
             freelist_first_page = header[HEADER_INFO_POSITIONS["freelist_first_page_number_start"]:HEADER_INFO_POSITIONS["freelist_first_page_number_start"]+1]
             freelist_pages = [free_list_first_page]
             overflow_pages = []
@@ -62,19 +77,34 @@ class SQLiteAdvancedPartitioner(Partitioner):
                     pass
                 # Root page, containing the database header and schema information
                 elif page_number == 1:
-                    buckets["metadata"] += page
+                    self.buckets["metadata"] += page
                 # Locking page, which always contains all zeroes
                 elif page_number == 2**30:
-                    buckets["metadata"] += page
+                    self.buckets["metadata"] += page
                 # Either table interior, index interior, or index b-tree leaf page. These do not contain cell data
                 elif page_type in PAGE_TYPES.values() and page_type != PAGE_TYPES["table_leaf"]:
-                    buckets["metadata"] += page
+                    self.buckets["metadata"] += page
                 # Table b-tree leaf page
                 elif page_type == PAGE_TYPES["table_leaf"]:
-                    self._parse_btree_leaf(page)
+                    # TODO: find table name.
+                    # We can do this heuristically by comparing sqlite_schema.sql against the payload of the row
+                    # Or, do it _very_ slowly by iterating through all tables and seeing if the row is in the table
+                    cell_rowid, record_data = self._parse_btree_leaf(page)
+
+                    # For now, read the contents of the database by making a read-call to it. We can also parse this directly from record_data. TODO: check overflow page, if needed
+                    table_name = self._find_table_name(cur, cell_rowid, record_data)
+                    cur.execute("SELECT * FROM {table_name} WHERE rowid = ?", (cell_rowid,))
+                    row = cur.fetchone()
+                    data_unit = SQLiteDataUnit(row, table_name)
+                    principal = self.access_control_policy(data_unit)
+                    if principal == None:
+                            continue
+                    db_bucket_id = self.partition_policy(principal)
+                    self.buckets[db_bucket_id] += record_data
 
     def _parse_table_btree_leaf(self, page: bytes):
         # TODO: make these magic number global constants, similar to the ones for the database header
+        # TODO: feed all data that is not part of the record data to metadata stream
         number_of_cells = page[3:5]
         cell_content_area_start = page[5:7]
         cell_pointer_array = page[8:2*number_of_cells]
@@ -88,7 +118,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
             
             # Then, find the rowid of this cell, also encoded as a varint
             cell_rowid_varint = page[cell_start+bytes_used_varint_1:cell_start+18]
-            cell_rowid, bytes_used_varint_2 = self._varint_to_integer(cell_payload_size_varint)
+            cell_rowid, bytes_used_varint_2 = self._varint_to_integer(cell_rowid_varint)
 
             # We can now process the payload of the cell. The structure is a payload header followed by the record data
             cell_payload = page[cell_start+bytes_used_varint_1+bytes_used_varint_2:cell_start+cell_payload_size]
@@ -96,9 +126,41 @@ class SQLiteAdvancedPartitioner(Partitioner):
             payload_header_length, bytes_used_varint_3 = self._varint_to_integer(payload_header_length_varint)
             record_data = cell_payload[payload_header_length:]
 
-            # Finally, the record data contains the contents of the database cells
-            
+            return cell_rowid, record_data
+        
+    def _find_table_name(self, cur, rowid, record_data):
+         # Get the list of tables in the database
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cur.fetchall()
 
+        # Prepare a query template with placeholders
+        placeholders = ', '.join('?' for _ in record_data)
+
+        # Iterate through each table
+        for table in tables:
+            table_name = table[0]
+
+            # Generate a query to check if the row exists in the current table
+            query = f"SELECT COUNT(*) FROM {table_name} WHERE rowid = ? AND ({', '.join(f'? = ?' for _ in record_data)})"
+
+            try:
+                cur.execute(query, (record_data[0], *record_data))
+                count = cur.fetchone()[0]
+
+                if count > 0:
+                    print(f"Row found in table: {table_name}")
+                    cur.close()
+                    return table_name
+            except sqlite3.Error as e:
+                # Handle exceptions if the query fails (like mismatched columns)
+                continue
+
+        print("Row not found in any table.")
+        cur.close()
+        return None
+
+
+            
 
     def _varint_to_integer(self, varint):
         result = 0

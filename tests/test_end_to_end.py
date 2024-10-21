@@ -10,7 +10,7 @@ from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
 )
 from secure_compression_framework_lib.end_to_end.dedup_files import dedup_files_by_name
 from secure_compression_framework_lib.multi_stream.compress import ZlibCompressionStream
-from tests.test_partitioner_xml_advanced import example_extract_principal_from_xml
+from tests.test_partitioner_xml_advanced import example_author_as_principal_books_xml
 
 
 @pytest.fixture()
@@ -59,11 +59,11 @@ def trees_equivalent(tree1, tree2):
 
 
 def test_compress_xml_advanced_basic():
-    path = Path(__file__).parent / "examples/books.xml"
+    path = Path(__file__).parent / "example_data/books.xml"
     et_before = ElementTree.parse(path).getroot()
 
     partition_compressed_bytes, stream_switch = compress_xml_advanced_by_element(
-        path, example_extract_principal_from_xml
+        path, example_author_as_principal_books_xml
     )
     partition_decompressed_bytes = decompress_xml_advanced_by_element(partition_compressed_bytes, stream_switch)
     et_after = ElementTree.fromstring(partition_decompressed_bytes)
