@@ -54,10 +54,8 @@ class SQLiteSimplePartitioner(Partitioner):
 
                 # Create empty SQLite file if it does not exist yet
                 if db_bucket_id not in db_buckets:
-                    path_parts = self.data.split(os.path.sep)
-                    path_parts[-1] = str(db_bucket_id) + path_parts[-1]
-                    db_bucket_path = os.path.sep.join(path_parts)
-                    db_bucket_paths.append(Path(db_bucket_path))
+                    db_bucket_path = Path(self.data.parent, str(db_bucket_id) + "_" + self.data.name)
+                    db_bucket_paths.append(db_bucket_path)
                     db_bucket_con = sqlite3.connect(db_bucket_path)
                     db_bucket_cur = db_bucket_con.cursor()
                     for table_schema in schema:

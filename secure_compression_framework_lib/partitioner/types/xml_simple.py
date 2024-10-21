@@ -10,7 +10,11 @@ from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 
 class XMLSimplePartitioner(Partitioner):
-    def partition(self, partition_policy, access_control_policy):
+
+    def _get_data(self) -> Path:
+        return self.data
+    
+    def partition(self):
         db_buckets = {}
         db_bucket_paths = []
 
@@ -26,8 +30,7 @@ class XMLSimplePartitioner(Partitioner):
 
             # Create empty XML file if it does not exist yet
             if db_bucket_id not in db_buckets:
-                db_bucket_path = str(db_bucket_id) + self.data
-                db_bucket_paths.append(Path(db_bucket_path))
+                #TODO(fix): issue with root element
                 db_bucket_root = ET.Element(db_bucket_id)
                 db_buckets[db_bucket_id] = db_bucket_root
             else:
@@ -38,9 +41,8 @@ class XMLSimplePartitioner(Partitioner):
 
         for db_bucket_id, db_bucket_root in db_buckets.items():
             db_bucket_tree = ET.ElementTree(db_bucket_root)
-            path_parts = self.data.split(os.path.sep)
-            path_parts[-1] = str(db_bucket_id) + path_parts[-1]
-            db_bucket_path = os.path.sep.join(path_parts)
+            db_bucket_path = Path(self.data.parent, str(db_bucket_id) + "_" + self.data.name)
+            db_bucket_paths.append(db_bucket_path)
             db_bucket_tree.write(db_bucket_path, encoding="utf-8", xml_declaration=True)
 
         return db_bucket_paths
@@ -108,7 +110,7 @@ if __name__ == "__main__":
 
     for file_path in glob.glob(file_type):
         os.remove(file_path)
-
+    exit()
     db_name = "messages.xml"
     create_messages_xml(db_name)
 
@@ -120,8 +122,6 @@ if __name__ == "__main__":
     add_message_to_xml(db_name, 7, 1, "5Hello, World!")
     add_message_to_xml(db_name, 7, 1, "7Hello, World!")
 
-    partitioner = XMLSimplePartitioner(db_name)
-
     def access(element):
         if element.tag == "message":
             return element.find("gid").text
@@ -131,4 +131,6 @@ if __name__ == "__main__":
     def partition_policy(id):
         return id
 
-    partitioner.partition(partition_policy, access)
+    partitioner = XMLSimplePartitioner(Path(db_name), access, partition_policy)
+
+    partitioner.partition()
