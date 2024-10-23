@@ -97,3 +97,27 @@ def test_partitioner_xml_advanced_author_as_principal_title_separate():
         str(Principal(first_name="Eva", last_name="Corets")),
         book3_post_title + book4_pre_title,
     )
+
+
+def example_group_uuid_as_principal_keepass_sample_xml(xml_du: XMLDataUnit) -> Principal:
+    """Example access control policy function.
+
+    Assumes that principals can have views on keepass entries in a certain group and the principal with a view on the
+    groups entries is encoded as an XML element KeePassFile/Root/Group/[Group]... (groups can be nested) where we can
+    use the UUID element under group to identify the principal uniquely.
+    """
+    # Find the most immediate Group ancestor in tree
+    for element in reversed(xml_du.context):
+        if element.tag == "Group":
+            return Principal(uuid=element.find("UUID").text)
+    # Not under a Group
+    return Principal(null=True)
+
+
+def test_partitioner_xml_advanced_keepass_group_as_principal():
+    path = Path(__file__).parent / "example_data/keepass_sample.xml"
+    partitioner = XmlAdvancedPartitioner(
+        path, example_group_uuid_as_principal_keepass_sample_xml, basic_partition_policy
+    )
+    out = partitioner.partition()
+    assert len(out) == 6
