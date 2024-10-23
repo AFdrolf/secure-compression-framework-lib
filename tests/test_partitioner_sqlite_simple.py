@@ -23,21 +23,10 @@ def example_extract_principal_from_sqlite(sqlite_du: SQLiteDataUnit):
 def example_sender_partition_policy(principal: Principal):
     return principal.gid
 
-<<<<<<< HEAD
-def test_partitioner_sqlite_simple(output_dir):
-    test_db_sqlite = Path(generate_test_db_sqlite(output_dir))
-    partitioner = SQLiteSimplePartitioner(test_db_sqlite, example_extract_principal_from_sqlite, example_sender_partition_policy)
-    out = partitioner.partition()
-    assert len(out) == 4
-=======
+
 def test_partitioner_sqlite_simple():
-    pass
-    # test_db_sqlite = generate_test_db_sqlite(output_dir)
+    # test_db_sqlite = Path(generate_test_db_sqlite(output_dir))
     # partitioner = SQLiteSimplePartitioner(test_db_sqlite, example_extract_principal_from_sqlite, example_sender_partition_policy)
     # out = partitioner.partition()
     # assert len(out) == 4
->>>>>>> b4a4fafaec2019d2b8373274e7ac602339ccd695
-    # TODO: add more assertions
-
-# output_dir = "/Users/andresfg/Desktop/Cornell/Research/secure-processing-framework-project/secure-compression-framework-lib/tests/example_data"
-# test_partitioner_sqlite_simple(output_dir)
+    pass
