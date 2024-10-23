@@ -12,8 +12,14 @@ def create_empty_db_from_schema(db_path, schema_path):
 
 
 def insert_message_in_db(con, cur, ):
-    pass
+    # Update 'chats' table
+    # Update 'message' table
+    # Update into 'message_details' table
+    # Update into messages_ftsv2
+    # Update 'props' table
+    # Update 'sqlite_sequence' table
+    return
 
 
-def parse_transcript_csv():
+def parse_transcript_csv(csv_file):
     pass
