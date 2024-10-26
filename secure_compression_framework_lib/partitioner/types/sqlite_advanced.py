@@ -12,7 +12,7 @@ PAGE_SIZE_INFO_START_BYTE = 16
 PAGE_SIZE_INFO_END_BYTE = 18
 # Each start,end is inclusive
 HEADER_INFO_POSITIONS = {
-    "header_string_start":0,
+    "header_string_start": 0,
     "header_string_end": 15,
     "page_size_start": 16,
     "page_size_end": 17,
