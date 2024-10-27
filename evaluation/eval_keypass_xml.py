@@ -24,7 +24,7 @@ if __name__ == "__main__":
             et = generate_keepass_xml(n, dist)
             path = args.output_dir / f"{n}_{dist}.xml"
             et.write(path)
-            partition_compressed_bytes, stream_switch = compress_xml_advanced_by_element(
+            partition_compressed_bytes = compress_xml_advanced_by_element(
                 path, example_group_uuid_as_principal_keepass_sample_xml
             )
             partition_path = args.output_dir / f"{n}_{dist}.xml.gz.safe"

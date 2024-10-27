@@ -23,9 +23,9 @@ def test_compress_correctness():
     msc.compress("label", TEST1)
     msc.compress("label", TEST2)
 
-    c, ss = msc.finish()
+    c = msc.finish()
 
-    msd.decompress(c, ss)
+    msd.decompress(c)
     d = msd.finish()
 
     assert d == TEST1 + TEST2
@@ -38,14 +38,14 @@ def test_compress_diff_labels():
     msd = MSDecompressor(ZlibDecompressionStream)
     msc_diff.compress("label", TEST1)
     msc_diff.compress("label2", TEST2)
-    c_diff, ss_diff = msc_diff.finish()
+    c_diff = msc_diff.finish()
 
     msc_same = MSCompressor(ZlibCompressionStream)
     msc_same.compress("newlabel", TEST1)
     msc_same.compress("newlabel", TEST2)
-    c_same, ss_same = msc_same.finish()
+    c_same = msc_same.finish()
 
-    msd.decompress(c_diff, ss_diff)
+    msd.decompress(c_diff)
     d = msd.finish()
 
     assert d == TEST1 + TEST2
@@ -72,16 +72,16 @@ def test_compress_blocks(rdata):
         while block_number * block_size < len(data):
             i = block_number * block_size
             block = data[i : i + block_size]
-            out = block if block_number % 2 == 0 else None
+            out = block_number if block_number % 2 == 0 else None
             yield out, block
             block_number += 1
 
     for stream_key, data_chunk in blocks_to_resources(rdata):
         msc.compress(stream_key, data_chunk)
 
-    compressed_data, stream_switch = msc.finish()
+    compressed_data = msc.finish()
 
-    msd.decompress(compressed_data, stream_switch)
+    msd.decompress(compressed_data)
     decompressed_data = msd.finish()
 
     assert decompressed_data == rdata
