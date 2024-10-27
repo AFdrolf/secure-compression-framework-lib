@@ -13,7 +13,7 @@ from secure_compression_framework_lib.partitioner.types.xml_advanced import XmlA
 
 def compress_xml_advanced_by_element(
     xml_file: Path, access_control_policy: Callable[[XMLDataUnit], Principal]
-) -> tuple[bytes, list[str]]:
+) -> bytes:
     """Implements an XML compression scenario where the principal is encoded as an XML element.
 
     The application provides a Python function that extracts the principal from an XMLDataUnit (element + context) for
@@ -37,7 +37,7 @@ def compress_xml_advanced_by_element(
     return msc.finish()
 
 
-def decompress_xml_advanced_by_element(compressed_data: bytes, stream_switch: list[str]) -> bytes:
+def decompress_xml_advanced_by_element(ms_compressed_data: bytes) -> bytes:
     msd = MSDecompressor(ZlibDecompressionStream)
-    msd.decompress(compressed_data, stream_switch)
+    msd.decompress(ms_compressed_data)
     return msd.finish()

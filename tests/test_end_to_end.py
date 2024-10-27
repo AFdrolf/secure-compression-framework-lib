@@ -62,10 +62,8 @@ def test_compress_xml_advanced_basic():
     path = Path(__file__).parent / "example_data/books.xml"
     et_before = ElementTree.parse(path).getroot()
 
-    partition_compressed_bytes, stream_switch = compress_xml_advanced_by_element(
-        path, example_author_as_principal_books_xml
-    )
-    partition_decompressed_bytes = decompress_xml_advanced_by_element(partition_compressed_bytes, stream_switch)
+    partition_compressed_bytes = compress_xml_advanced_by_element(path, example_author_as_principal_books_xml)
+    partition_decompressed_bytes = decompress_xml_advanced_by_element(partition_compressed_bytes)
     et_after = ElementTree.fromstring(partition_decompressed_bytes)
 
     cs = ZlibCompressionStream()
