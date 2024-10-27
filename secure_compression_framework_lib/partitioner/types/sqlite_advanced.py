@@ -48,11 +48,11 @@ class SQLiteAdvancedPartitioner(Partitioner):
     def partition(self) -> list[Path]:
         self.buckets = defaultdict(bytes)
 
-        con = sqlite3.connect(self.data)
+        con = sqlite3.connect(self._get_data())
         cur = con.cursor()
 
-        db_size = os.path.getsize(self.data)
-        with open(self.data, "rb") as f:
+        db_size = self._get_data.stat().st_size
+        with open(self._get_data(), "rb") as f:
             # First, check header, and find page size
             header = f.read(HEADER_SIZE_BYTES)
             if header[HEADER_INFO_POSITIONS["header_string_start"]:HEADER_INFO_POSITIONS["header_string_end"]+1].decode("ascii") != HEADER_STRING:

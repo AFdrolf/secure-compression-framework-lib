@@ -9,7 +9,7 @@ LONG_TAIL_MODEL_CONSTANTS = {
 }
 
 
-def generate_chats_LLM_prompt(number_chats, number_messages, communication_model, output_file):
+def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communication_model: str, csv_output_file):
     """Given some seed parameters, generates the prompt to feed to an LLM for generating a transcript of chats.
     
     This function corresponds to a single iteration of the evaluation.
@@ -25,6 +25,7 @@ def generate_chats_LLM_prompt(number_chats, number_messages, communication_model
     from faker import Faker
     import csv
     import time
+    from pathlib import Path
 
     message_generator = Faker()
     conversations = []
@@ -39,7 +40,7 @@ def generate_chats_LLM_prompt(number_chats, number_messages, communication_model
             sender, recipient = ("owner", principal) if from_owner else (principal, "sender")
         conversations.append((sender, recipient, text, timestamp))
     conversations.sort(key=lambda message: message[3])
-    with open(output_file, 'w', newline='') as csvfile:
+    with open(csv_output_file, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(conversations)
 
@@ -60,6 +61,7 @@ def generate_number_messages_chats(number_chats, number_messages, communication_
 
     # Most chats have a few messages, while a few chats have many messages
     elif communication_model == "long_tail":
+        # TODO: some basic checks to make sure that input numbers always make sense (e.g., that there are enough messages for low-activity chats to have at least one message)
         high_activity_chats_total = number_chats*LONG_TAIL_MODEL_CONSTANTS["high_activity_chats_percentage"]
         high_activity_messages_total = number_messages*LONG_TAIL_MODEL_CONSTANTS["high_activity_messages_percentage"]
         high_activity_chats_avg_messages = high_activity_messages_total//high_activity_chats_total

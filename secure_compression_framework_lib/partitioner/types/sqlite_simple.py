@@ -31,7 +31,7 @@ class SQLiteSimplePartitioner(Partitioner):
         db_buckets = {}
         db_bucket_paths = []
 
-        con = sqlite3.connect(self.data)
+        con = sqlite3.connect(self._get_data())
         cur = con.cursor()
 
         # Save schema to later create identical `bucket' DBs
@@ -53,7 +53,7 @@ class SQLiteSimplePartitioner(Partitioner):
 
                 # Create empty SQLite file if it does not exist yet
                 if db_bucket_id not in db_buckets:
-                    db_bucket_path = Path(self.data.parent, str(db_bucket_id) + "_" + self.data.name)
+                    db_bucket_path = self._get_data().parent / str(db_bucket_id) + "_" + self._get_data().name
                     db_bucket_paths.append(db_bucket_path)
                     db_bucket_con = sqlite3.connect(db_bucket_path)
                     db_bucket_cur = db_bucket_con.cursor()
