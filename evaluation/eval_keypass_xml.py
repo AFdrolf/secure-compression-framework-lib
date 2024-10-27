@@ -1,6 +1,6 @@
 import argparse
-import zlib
 from pathlib import Path
+import zlib
 
 from evaluation.data_populator.keepass_xml.keepass_xml_populator import generate_keepass_xml
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element

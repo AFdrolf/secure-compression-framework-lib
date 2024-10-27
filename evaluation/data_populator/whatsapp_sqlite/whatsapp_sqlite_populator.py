@@ -15,7 +15,7 @@ class SimpleWhatsAppMessage:
     from_owner: bool
     interacting_principal_id: str
     text: str
-    timestamp: int
+    timestamp: int # Miliseconds
 
 
 def insert_message_in_db(con, cur, whatsapp_message_obj, seen_principals=dict()):
@@ -34,7 +34,7 @@ def insert_message_in_db(con, cur, whatsapp_message_obj, seen_principals=dict())
     key_id = str(secrets.token_bytes(16).hex().upper())
     sender_jid_row_id = jid_row_id
     timestamp = whatsapp_message_obj.timestamp
-    received_timestamp = timestamp - timestamp % 100 if not from_me else 0
+    received_timestamp = timestamp - timestamp % 1000 if not from_me else 0
     text_data = whatsapp_message_obj.text
     cur.execute(SQL["message_table_insert"], (chat_row_id, from_me, key_id, sender_jid_row_id, timestamp, received_timestamp, text_data))
 

@@ -8,7 +8,8 @@ LONG_TAIL_MODEL_CONSTANTS = {
     "high_activity_chat_min_messages": 0.5    # To compute the minimum number of messages to be considered a high-activity chat
 }
 
-def generate_chats_LLM_prompt(number_chats, number_messages, communication_model):
+
+def generate_chats_LLM_prompt(number_chats, number_messages, communication_model, output_file):
     """Given some seed parameters, generates the prompt to feed to an LLM for generating a transcript of chats.
     
     This function corresponds to a single iteration of the evaluation.
@@ -18,18 +19,44 @@ def generate_chats_LLM_prompt(number_chats, number_messages, communication_model
     number_chats: Number of chats
     number_messages: Total number of messages sent across all chats
     """
-    number_messages_per_conversation = []
+    number_messages_per_chat = generate_number_messages_chats(number_chats, number_messages, communication_model)
+
+    # NOTE: For testing purposes; eventually replace with call to LLM
+    from faker import Faker
+    import csv
+    import time
+
+    message_generator = Faker()
+    conversations = []
+    for n in range(number_messages_per_chat):
+        # Sample a random phone number for the principal in this chat
+        principal = random.randint(100000000,9999999999)
+        # For every message in this chat, flip a coin to determine if it was sent or received, and then sample a random timestamp (in the past week) and a random text
+        for _ in range(n):
+            from_owner = random.randint(0, 1)
+            timestamp = int(time.time()*1000) - random.randint(0, 604800000) # 604800000 is the number of miliseconds in a week
+            text = message_generator.sentence()
+            sender, recipient = ("owner", principal) if from_owner else (principal, "sender")
+        conversations.append((sender, recipient, text, timestamp))
+    conversations.sort(key=lambda message: message[3])
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(conversations)
+
+
+def generate_number_messages_chats(number_chats, number_messages, communication_model):
+    number_messages_per_chat = []
 
     # All chats have the same number of messages
     if communication_model == "even":
         for i in range(number_chats):
             r = number_messages//number_chats
-            number_messages_per_conversation.append(r+1 if i < number_messages % number_chats else r)
+            number_messages_per_chat.append(r+1 if i < number_messages % number_chats else r)
 
     # All chats have a random number of messages
     elif communication_model == "random":
-        number_messages_per_conversation = [1] * number_chats
-        _allocate_messages_randomly_to_chats(number_messages_per_conversation, number_messages-number_chats)
+        number_messages_per_chat = [1] * number_chats
+        _allocate_messages_randomly_to_chats(number_messages_per_chat, number_messages-number_chats)
 
     # Most chats have a few messages, while a few chats have many messages
     elif communication_model == "long_tail":
@@ -42,14 +69,16 @@ def generate_chats_LLM_prompt(number_chats, number_messages, communication_model
         messages_allocated = 0
         for _ in range(high_activity_chats_total):
             number_messages = random.randint(high_activity_chats_min_messages, high_activity_chats_avg_messages)
-            number_messages_per_conversation.append(number_messages)
+            number_messages_per_chat.append(number_messages)
             messages_allocated += number_messages
         # If there are still messages for the high activity chats left, allocate them randomly to these
-        _allocate_messages_randomly_to_chats(number_messages_per_conversation, high_activity_messages_total-messages_allocated)
+        _allocate_messages_randomly_to_chats(number_messages_per_chat, high_activity_messages_total-messages_allocated)
 
         # Then, allocate remaining messages to the rest of the chats
         low_activity_chats = [1] * (number_chats - high_activity_chats_total)
-        number_messages_per_conversation += _allocate_messages_randomly_to_chats(low_activity_chats, number_messages-high_activity_messages_total, high_activity_chats_min_messages-1)
+        number_messages_per_chat += _allocate_messages_randomly_to_chats(low_activity_chats, number_messages-high_activity_messages_total, high_activity_chats_min_messages-1)
+
+    return number_messages_per_chat
 
 
 def _allocate_messages_randomly_to_chats(chats_list, number_messages, max_messages_chat=None):
