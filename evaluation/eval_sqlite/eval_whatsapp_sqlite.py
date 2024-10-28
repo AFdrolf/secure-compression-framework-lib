@@ -3,7 +3,7 @@ from pathlib import Path
 import zlib
 
 from evaluation.data_populator.whatsapp_sqlite.whatsapp_sqlite_populator import generate_whatsapp_sqlite
-from evaluation.data_generator.messaging_data_parameters_generator import generate_chats_LLM_prompt
+from evaluation.data_generator.messaging_data_generator import generate_chats_LLM_prompt
 from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
 
 
