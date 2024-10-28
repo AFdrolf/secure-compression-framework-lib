@@ -36,7 +36,7 @@ def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communica
                 0, 604800000
             )  # 604800000 is the number of milliseconds in a week
             text = message_generator.sentence()
-            sender, recipient = ("owner", principal) if from_owner else (principal, "sender")
+            sender, recipient = ("owner", principal) if from_owner else (principal, "owner")
         conversations.append((sender, recipient, text, timestamp))
     conversations.sort(key=lambda message: message[3])
     with open(csv_output_file, "w", newline="") as csvfile:

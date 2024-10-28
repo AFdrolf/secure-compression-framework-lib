@@ -1,13 +1,14 @@
 import csv
-import secrets
-import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
+import secrets
+import sqlite3
+
 
 SQL = {
-    "chat_table_insert": "INSERT INTO chat(jid_row_id) VALUES (?)",
+    "chat_table_insert": "INSERT INTO chat(jid_row_id) VALUES (?,)",
     "jid_table_insert": "INSERT INTO jid(user,server) VALUES (?, ?)",
-    "message_table_insert": "INSERT INTO message(chat_row_id,from_me,key_id,sender_jid_row_id,timestamp,received_timestamp,text_data) VALUES (?, ?)",
+    "message_table_insert": "INSERT INTO message(chat_row_id,from_me,key_id,sender_jid_row_id,timestamp,received_timestamp,text_data) VALUES (?, ?, ?, ?, ?, ?, ?)",
 }
 WA_SCHEMA_PATH = Path(__file__).parent.parent / "helper_data" / "whatsapp_schema.sql"
 
@@ -20,11 +21,11 @@ class SimpleWhatsAppMessage:
     timestamp: int  # Milliseconds
 
 
-def insert_message_in_db(cur: sqlite3.Cursor, whatsapp_message_obj: SimpleWhatsAppMessage, seen_principals=dict()):
+def insert_message_in_db(cur: sqlite3.Cursor, whatsapp_message_obj: SimpleWhatsAppMessage, seen_principals: dict):
     # If principal is new, insert row into 'jid' and 'chats' table
     if whatsapp_message_obj.interacting_principal_id not in seen_principals:
-        jid_row_id = cur.execute("SELECT max(_id) FROM jid").fetchone()[0] + 1
-        chat_row_id = cur.execute("SELECT max(_id) FROM chat").fetchone()[0] + 1
+        jid_row_id = len(seen_principals) + 1
+        chat_row_id = len(seen_principals) + 1
         cur.execute(SQL["jid_table_insert"], (whatsapp_message_obj.interacting_principal_id, "s.whatsapp.net"))
         cur.execute(SQL["chats_table_insert"], (jid_row_id,))
         seen_principals[whatsapp_message_obj.interacting_principal_id] = (jid_row_id, chat_row_id)
@@ -43,15 +44,12 @@ def insert_message_in_db(cur: sqlite3.Cursor, whatsapp_message_obj: SimpleWhatsA
         (chat_row_id, from_me, key_id, sender_jid_row_id, timestamp, received_timestamp, text_data),
     )
 
-    return
-
 
 def parse_transcript_csv(chats_csv: Path):
     with open(chats_csv, mode="r", newline="", encoding="utf-8") as f:
         chats_csv_reader = csv.reader(f)
         for row in chats_csv_reader:
             yield row
-    return
 
 
 def create_empty_db_from_schema(schema_path: Path, db_path: Path):
@@ -71,12 +69,13 @@ def create_empty_db_from_schema(schema_path: Path, db_path: Path):
     return con, cur
 
 
-def generate_whatsapp_sqlite(chats_csv: Path, db_path: Path):
-    con, cur = create_empty_db_from_schema(WA_SCHEMA_PATH, db_path)
+def generate_whatsapp_sqlite(chats_csv: Path, db_output_path: Path):
+    con, cur = create_empty_db_from_schema(WA_SCHEMA_PATH, db_output_path)
     seen_principals = dict()
     for csv_row in parse_transcript_csv(chats_csv):
-        whatsapp_message_obj = SimpleWhatsAppMessage(*csv_row)
+        sender, recipient, text, timestamp = csv_row
+        from_owner, interacting_principal_id = (1, recipient) if sender == "owner" else (0, sender)
+        whatsapp_message_obj = SimpleWhatsAppMessage(from_owner, interacting_principal_id, text, timestamp)
         insert_message_in_db(cur, whatsapp_message_obj, seen_principals)
     con.commit()
     con.close()
-    return
