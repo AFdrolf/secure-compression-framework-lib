@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
-import sys
 
-sys.path.append(sys.path[0] + "/../../..")
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 # TODO: we may need to make this code more efficient to deal with large databases.
@@ -34,7 +32,7 @@ class SQLiteSimplePartitioner(Partitioner):
         con = sqlite3.connect(self._get_data())
         cur = con.cursor()
 
-        # Save schema to later create identical `bucket' DBs
+        # Save schema to later create identical 'bucket' DBs
         cur.execute("SELECT sql FROM sqlite_master WHERE type='table'")
         schema = cur.fetchall()
 
@@ -53,13 +51,14 @@ class SQLiteSimplePartitioner(Partitioner):
 
                 # Create empty SQLite file if it does not exist yet
                 if db_bucket_id not in db_buckets:
-                    db_bucket_path = self._get_data().parent / str(db_bucket_id) + "_" + self._get_data().name
+                    db_bucket_path = self._get_data().parent / (str(db_bucket_id) + "_" + self._get_data().name)
                     db_bucket_paths.append(db_bucket_path)
                     db_bucket_con = sqlite3.connect(db_bucket_path)
                     db_bucket_cur = db_bucket_con.cursor()
                     for table_schema in schema:
                         # sqlite_sequence table gets created automatically; error is thrown if created manually
-                        if "sqlite_sequence" not in table_schema[0]:
+                        # TODO cleanup for other tables
+                        if "sqlite_sequence" not in table_schema[0] and "message_ftsv2_content" not in table_schema[0] and "message_ftsv2_segments" not in table_schema[0] and "message_ftsv2_segdir" not in table_schema[0] and "message_ftsv2_docsize" not in table_schema[0] and "message_ftsv2_stat" not in table_schema[0] and "labeled_messages_fts_content" not in table_schema[0] and "labeled_messages_fts_segments" not in table_schema[0] and "labeled_messages_fts_segdir" not in table_schema[0] and "labeled_messages_fts_docsize" not in table_schema[0] and "labeled_messages_fts_stat" not in table_schema[0]:
                             db_bucket_cur.execute(table_schema[0])
                     db_buckets[db_bucket_id] = (db_bucket_con, db_bucket_cur)
                 else:

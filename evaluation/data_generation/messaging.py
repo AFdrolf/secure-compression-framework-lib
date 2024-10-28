@@ -2,6 +2,7 @@ import random
 
 from evaluation.util import LONG_TAIL_MODEL_CONSTANTS
 
+
 LLM_PROMPT = ""
 
 
@@ -26,7 +27,7 @@ def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communica
 
     message_generator = Faker()
     conversations = []
-    for n in range(number_messages_per_chat):
+    for n in range(len(number_messages_per_chat)):
         # Sample a random phone number for the principal in this chat
         principal = random.randint(100000000, 9999999999)
         # For every message in this chat, flip a coin to determine if it was sent or received, and then sample a random timestamp (in the past week) and a random text
@@ -37,9 +38,9 @@ def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communica
             )  # 604800000 is the number of milliseconds in a week
             text = message_generator.sentence()
             sender, recipient = ("owner", principal) if from_owner else (principal, "owner")
-        conversations.append((sender, recipient, text, timestamp))
+            conversations.append((sender, recipient, text, timestamp))
     conversations.sort(key=lambda message: message[3])
-    with open(csv_output_file, "w", newline="") as csvfile:
+    with open(csv_output_file, "a", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(conversations)
 
