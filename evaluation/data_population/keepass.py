@@ -2,11 +2,9 @@ import csv
 import os
 import subprocess
 from pathlib import Path
-from sys import stdout
 from typing import Optional, TextIO
-from xml.etree import ElementTree
 
-from evaluation.data_generator.keepass_generator import KeepassCSVRow
+from evaluation.data_generation.keepass import KeepassCSVRow
 
 
 def generate_keepass_xml(csv_file: Path, output_dir: Path) -> None:

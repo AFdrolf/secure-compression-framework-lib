@@ -1,18 +1,11 @@
 import argparse
 from pathlib import Path
-import zlib
 
-from evaluation.data_generator.keepass_generator import generate_keepass_csv
-from evaluation.data_populator.keepass_xml.keepass_xml_populator import generate_keepass_xml
+from evaluation.data_generation.keepass import generate_keepass_csv
+from evaluation.data_population.keepass import generate_keepass_xml
+from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element
 from tests.test_partitioner_xml_advanced import example_group_uuid_as_principal_keepass_sample_xml
-
-
-def compress_file(in_path: Path, out_path: Path):
-    b = in_path.read_bytes()
-    c = zlib.compress(b)
-    out_path.write_bytes(c)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

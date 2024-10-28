@@ -12,7 +12,7 @@ from pathlib import Path
 
 def generate_username() -> str:
     # Random sample of https://github.com/danielmiessler/SecLists/blob/master/Usernames/xato-net-10-million-usernames.txt
-    usernames_path = Path(__file__).parent.parent / "keepass_helper_data" / "usernames_100k.txt"
+    usernames_path = Path(__file__).parent.parent / "helper_data" / "usernames_100k.txt"
     with usernames_path.open() as f:
         base_username = random.choice(f.readlines())[:-1]
     return base_username
@@ -30,7 +30,7 @@ def generate_pwd() -> str:
 
 def generate_url() -> str:
     # random from top 100k of Alexa top 1 million sites
-    usernames_path = Path(__file__).parent.parent / "keepass_helper_data" / "websites_100k.csv"
+    usernames_path = Path(__file__).parent.parent / "helper_data" / "websites_100k.csv"
     with usernames_path.open() as f:
         base_url = random.choice(f.readlines()).split(",")[1][:-1]
     # We add a random number to end of username to simulate slightly different usernames across accounts

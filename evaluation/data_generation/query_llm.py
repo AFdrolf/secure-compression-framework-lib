@@ -1,6 +1,8 @@
-import requests
-from urllib.parse import urljoin
 import json
+from urllib.parse import urljoin
+
+import requests
+
 
 def complete_prompt(api_base_url, proxy_url, prompt, n_predict=4096):
     """
@@ -17,13 +19,10 @@ def complete_prompt(api_base_url, proxy_url, prompt, n_predict=4096):
     """
 
     # Construct the full API endpoint URL
-    endpoint_url = urljoin(api_base_url, 'completion')
+    endpoint_url = urljoin(api_base_url, "completion")
 
     # Set up the proxy
-    proxies = {
-        'http': proxy_url,
-        'https': proxy_url
-    }
+    proxies = {"http": proxy_url, "https": proxy_url}
 
     # Prepare the payload
     payload = {
@@ -46,6 +45,7 @@ def complete_prompt(api_base_url, proxy_url, prompt, n_predict=4096):
     except json.JSONDecodeError as err:
         print("JSON Decode Error:", err)
         return None
+
 
 # Example usage
 if __name__ == "__main__":
