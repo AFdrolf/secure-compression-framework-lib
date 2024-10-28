@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 import zlib
 
+from evaluation.data_generator.keepass_generator import generate_keepass_csv
 from evaluation.data_populator.keepass_xml.keepass_xml_populator import generate_keepass_xml
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element
 from tests.test_partitioner_xml_advanced import example_group_uuid_as_principal_keepass_sample_xml
@@ -21,12 +22,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     for n in range(1, 5):
         for dist in ["shallow"]:
-            et = generate_keepass_xml(n, dist)
-            path = args.output_dir / f"{n}_{dist}.xml"
-            et.write(path)
+            csv_path = args.output_dir / f"{n}_{dist}.csv"
+            xml_path = args.output_dir / f"{n}_{dist}.xml"
+            generate_keepass_csv(n, dist, csv_path)
+            generate_keepass_xml(csv_path, args.output_dir)
             partition_compressed_bytes = compress_xml_advanced_by_element(
-                path, example_group_uuid_as_principal_keepass_sample_xml
+                xml_path, example_group_uuid_as_principal_keepass_sample_xml
             )
             partition_path = args.output_dir / f"{n}_{dist}.xml.gz.safe"
             partition_path.write_bytes(partition_compressed_bytes)
-            compress_file(path, args.output_dir / f"{n}_{dist}.xml.gz")
+            compress_file(xml_path, args.output_dir / f"{n}_{dist}.xml.gz")
