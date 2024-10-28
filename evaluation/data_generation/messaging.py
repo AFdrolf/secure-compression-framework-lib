@@ -34,7 +34,7 @@ def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communica
             from_owner = random.randint(0, 1)
             timestamp = int(time.time() * 1000) - random.randint(
                 0, 604800000
-            )  # 604800000 is the number of miliseconds in a week
+            )  # 604800000 is the number of milliseconds in a week
             text = message_generator.sentence()
             sender, recipient = ("owner", principal) if from_owner else (principal, "sender")
         conversations.append((sender, recipient, text, timestamp))
@@ -56,7 +56,7 @@ def generate_number_messages_chats(number_chats, number_messages, communication_
     # All chats have a random number of messages
     elif communication_model == "random":
         number_messages_per_chat = [1] * number_chats
-        _allocate_messages_randomly_to_chats(number_messages_per_chat, number_messages - number_chats)
+        allocate_messages_randomly_to_chats(number_messages_per_chat, number_messages - number_chats)
 
     # Most chats have a few messages, while a few chats have many messages
     elif communication_model == "long_tail":
@@ -75,20 +75,20 @@ def generate_number_messages_chats(number_chats, number_messages, communication_
             number_messages_per_chat.append(number_messages)
             messages_allocated += number_messages
         # If there are still messages for the high activity chats left, allocate them randomly to these
-        _allocate_messages_randomly_to_chats(
+        allocate_messages_randomly_to_chats(
             number_messages_per_chat, high_activity_messages_total - messages_allocated
         )
 
         # Then, allocate remaining messages to the rest of the chats
         low_activity_chats = [1] * (number_chats - high_activity_chats_total)
-        number_messages_per_chat += _allocate_messages_randomly_to_chats(
+        number_messages_per_chat += allocate_messages_randomly_to_chats(
             low_activity_chats, number_messages - high_activity_messages_total, high_activity_chats_min_messages - 1
         )
 
     return number_messages_per_chat
 
 
-def _allocate_messages_randomly_to_chats(chats_list, number_messages, max_messages_chat=None):
+def allocate_messages_randomly_to_chats(chats_list, number_messages, max_messages_chat=None):
     for _ in range(number_messages):
         chat_ix = random.randint(0, len(chats_list) - 1)
         while max_messages_chat and max_messages_chat <= chats_list[chat_ix]:

@@ -6,6 +6,7 @@ from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
 
+
 OUTPUT_FILENAMES = {
     "messaging_data_csv": "messaging_data.csv",
     "db": "messaging_data.db",

@@ -17,7 +17,7 @@ class SimpleWhatsAppMessage:
     from_owner: bool
     interacting_principal_id: str
     text: str
-    timestamp: int  # Miliseconds
+    timestamp: int  # Milliseconds
 
 
 def insert_message_in_db(cur: sqlite3.Cursor, whatsapp_message_obj: SimpleWhatsAppMessage, seen_principals=dict()):
