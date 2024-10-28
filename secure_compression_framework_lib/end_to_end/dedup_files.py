@@ -36,3 +36,9 @@ def dedup_files_by_name(files_dir: Path) -> list[Path]:
         bucket_dedup_files = dedup(checksum_comparison_function, [f[1] for f in file_tuples])
         dedup_files.extend(bucket_dedup_files)
     return dedup_files
+
+
+def dedup_files(files_dir: Path, access_control_policy, partition_policy):
+    partitioner = FileSystemPartitioner(files_dir, access_control_policy, partition_policy)
+    file_buckets = partitioner.partition()
+    # TODO: finish this function
