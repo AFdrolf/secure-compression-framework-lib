@@ -13,14 +13,16 @@ from evaluation.util import generate_distribution
 
 
 def generate_username() -> str:
-    # Random sample of https://github.com/danielmiessler/SecLists/blob/master/Usernames/xato-net-10-million-usernames.txt
+    """
+    Randomly sample from https://github.com/danielmiessler/SecLists/blob/master/Usernames/xato-net-10-million-usernames.txt
+    """
     usernames_path = Path(__file__).parent.parent / "helper_data" / "usernames_100k.txt"
     with usernames_path.open() as f:
         base_username = random.choice(f.readlines())[:-1]
     return base_username
 
 
-def generate_pwd() -> str:
+def generate_keepass_pwd() -> str:
     """Uses keepass-cli to generate a password using default settings.
 
     Must have KPCLIPATH envvar set"""
@@ -28,6 +30,15 @@ def generate_pwd() -> str:
     assert kpcli_path is not None, "KPCLIPATH envvar must be set"
     p = subprocess.run([kpcli_path, "generate"], capture_output=True)
     return p.stdout.decode("utf-8")[:-1]
+
+
+def generate_list_password() -> str:
+    """
+    Randomly sample from https://github.com/danielmiessler/SecLists/blob/master/Passwords/xato-net-10-million-passwords-100000.txt
+    """
+    passwords_path = Path(__file__).parent.parent / "helper_data" / "passwords_10k.txt"
+    with passwords_path.open() as f:
+        return random.choice(f.readlines())[:-1]
 
 
 def generate_url() -> str:
@@ -59,30 +70,34 @@ class KeepassCSVRow:
     version: int  # version is used to record history of an entry (e.g. password for an entry changes)
     group: str
     username: str
+    password: str
     url: str
 
     @classmethod
-    def generate_row(cls, group: str, username: str = None) -> KeepassCSVRow:
+    def generate_row(cls, group: str, username: str = None, random_password: bool = True) -> KeepassCSVRow:
         username = generate_username() if username is None else username
+        password = generate_keepass_pwd() if random_password else generate_list_password()
         url = generate_url()
         return cls(
             account_name=f"{url} {username}",
             version=0,
             group=group,
+            password=password,
             username=username,
             url=url,
         )
 
 
-def generate_keepass_csv(n: int, m: int, dist: str, output_file: Path) -> None:
+def generate_keepass_csv(n: int, m: int, dist: str, random_passwords: bool, output_path: Path) -> None:
     """Given some parameters, generate a CSV containing Keepass password data.
 
     Args:
     -----
     n: Number of Keeshare groups
     m: Number of Entries across entire database
-    D: Distribution of the number of entries for a group ("even", "random" or "long_tail")
-    output_dir: Output directory for generated CSV file
+    dist: Distribution of the number of entries for a group ("even", "random" or "long_tail")
+    random_passwords: Whether keepass should generate passwords or they should be sampled from a list of common passwords
+    output_path: Output path for generated CSV file
 
     """
     group_num_entries = generate_distribution(n, m, dist)
@@ -99,12 +114,11 @@ def generate_keepass_csv(n: int, m: int, dist: str, output_file: Path) -> None:
         username = generate_username()
         for j in range(num_entries):
             # We add a random number to end of username to simulate slightly different usernames across accounts
-            entry = KeepassCSVRow.generate_row(group, username + str(random.randint(0, 9)))
+            entry = KeepassCSVRow.generate_row(group, username + str(random.randint(0, 9)), random_passwords)
             rows.append(entry)
-            # Randomly generate password change history (assuming 0-2 past versions of entry)
-            for v in range(random.randrange(0, 2)):
-                new_version_entry = dataclasses.replace(entry, version=v + 1)
-                rows.append(new_version_entry)
+            # Generate password change history (assuming 1 past versions of entry)
+            new_version_entry = dataclasses.replace(entry, version=1)
+            rows.append(new_version_entry)
 
     columns = [field.name for field in dataclasses.fields(KeepassCSVRow)]
     output = [columns]
@@ -112,6 +126,6 @@ def generate_keepass_csv(n: int, m: int, dist: str, output_file: Path) -> None:
         output_row = [getattr(row, c) for c in columns]
         output.append(output_row)
 
-    with output_file.open("w") as f:
+    with output_path.open("w") as f:
         writer = csv.writer(f)
         writer.writerows(output)

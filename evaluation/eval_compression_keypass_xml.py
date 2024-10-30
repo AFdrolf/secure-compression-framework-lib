@@ -17,7 +17,7 @@ if __name__ == "__main__":
         "communication_model", help="Communication model for generation of synthetic test data", nargs="+", type=str
     )
     parser.add_argument(
-        "--disable_cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
+        "--disable-cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
     )
     args = parser.parse_args()
     cleanup = not args.disable_cleanup
@@ -32,7 +32,7 @@ if __name__ == "__main__":
             for dist in dist_list:
                 csv_path = args.output_dir / f"{n}_{m}_{dist}.csv"
                 xml_path = args.output_dir / f"{n}_{m}_{dist}.xml"
-                generate_keepass_csv(n, m, dist, csv_path)
+                generate_keepass_csv(n, m, dist, True, csv_path)
                 generate_keepass_xml(csv_path, args.output_dir, cleanup)
                 partition_compressed_bytes = compress_xml_advanced_by_element(
                     xml_path, example_group_uuid_as_principal_keepass_sample_xml
