@@ -9,6 +9,8 @@ import subprocess
 import time
 from pathlib import Path
 
+from evaluation.util import generate_distribution
+
 
 def generate_username() -> str:
     # Random sample of https://github.com/danielmiessler/SecLists/blob/master/Usernames/xato-net-10-million-usernames.txt
@@ -72,25 +74,23 @@ class KeepassCSVRow:
         )
 
 
-def generate_keepass_csv(n: int, dist: str, output_file: Path) -> None:
+def generate_keepass_csv(n: int, m: int, dist: str, output_file: Path) -> None:
     """Given some parameters, generate a CSV containing Keepass password data.
 
     Args:
     -----
     n: Number of Keeshare groups
-    D: Distribution of the number of entries for a group
+    m: Number of Entries across entire database
+    D: Distribution of the number of entries for a group ("even", "random" or "long_tail")
     output_dir: Output directory for generated CSV file
 
     """
-    if dist == "shallow":
-        group_num_entries = [2] * n
-    else:
-        group_num_entries = [3] * n
+    group_num_entries = generate_distribution(n, m, dist)
 
     rows = []
     for i, num_entries in enumerate(sorted(group_num_entries, reverse=True)):
         if i == 0:
-            # Generate root group first as we assume this is the largest
+            # Generate root group first
             group = "Root"
         else:
             # Assume group is shared with a different user
