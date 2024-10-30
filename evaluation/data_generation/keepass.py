@@ -31,7 +31,7 @@ def generate_pwd() -> str:
 
 
 def generate_url() -> str:
-    # random from top 100k of Alexa top 1 million sites
+    # Top 100k from https://tranco-list.eu/list/6699X/1000000 downloaded 10/29/24
     usernames_path = Path(__file__).parent.parent / "helper_data" / "websites_100k.csv"
     with usernames_path.open() as f:
         base_url = random.choice(f.readlines()).split(",")[1][:-1]
