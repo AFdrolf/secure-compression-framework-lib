@@ -14,7 +14,11 @@ if __name__ == "__main__":
     parser.add_argument("--n", help="Number of total groups in keepass", nargs="+", type=int, default=[1])
     parser.add_argument("--m", help="Number of total entries in keepass", nargs="+", type=int, default=[1])
     parser.add_argument(
-        "--dist", help="Communication model for generation of synthetic test data", nargs="+", type=str, default=["even"]
+        "--dist",
+        help="Communication model for generation of synthetic test data",
+        nargs="+",
+        type=str,
+        default=["even"],
     )
     parser.add_argument(
         "--disable-cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
@@ -45,7 +49,15 @@ if __name__ == "__main__":
                     compress_file(xml_path, compress_path)
 
                     stats_columns.append(
-                        [n, m, dist, rp, xml_path.stat().st_size, compress_path.stat().st_size, partition_path.stat().st_size]
+                        [
+                            n,
+                            m,
+                            dist,
+                            rp,
+                            xml_path.stat().st_size,
+                            compress_path.stat().st_size,
+                            partition_path.stat().st_size,
+                        ]
                     )
 
                     if cleanup:

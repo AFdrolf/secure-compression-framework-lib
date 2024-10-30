@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import sys
+
 sys.path.append(sys.path[0] + "/..")
 
 from evaluation.data_generation.messaging import generate_chats_llm_prompt
@@ -57,7 +58,7 @@ if __name__ == "__main__":
             return Principal(gid=principal_gid)
         else:
             return Principal(gid="metadata")
-        
+
     def partition_policy(principal):
         return principal.gid
 

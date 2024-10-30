@@ -1,6 +1,6 @@
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-import sqlite3
 
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
@@ -17,6 +17,7 @@ class SQLiteDataUnit:
 
     row: tuple
     table_name: str
+
 
 class SQLiteSimplePartitioner(Partitioner):
     """Implements partitioner where the data is a Path object for the SQLite database file to be partitioned."""
@@ -58,7 +59,19 @@ class SQLiteSimplePartitioner(Partitioner):
                     for table_schema in schema:
                         # sqlite_sequence table gets created automatically; error is thrown if created manually
                         # TODO cleanup for other tables
-                        if "sqlite_sequence" not in table_schema[0] and "message_ftsv2_content" not in table_schema[0] and "message_ftsv2_segments" not in table_schema[0] and "message_ftsv2_segdir" not in table_schema[0] and "message_ftsv2_docsize" not in table_schema[0] and "message_ftsv2_stat" not in table_schema[0] and "labeled_messages_fts_content" not in table_schema[0] and "labeled_messages_fts_segments" not in table_schema[0] and "labeled_messages_fts_segdir" not in table_schema[0] and "labeled_messages_fts_docsize" not in table_schema[0] and "labeled_messages_fts_stat" not in table_schema[0]:
+                        if (
+                            "sqlite_sequence" not in table_schema[0]
+                            and "message_ftsv2_content" not in table_schema[0]
+                            and "message_ftsv2_segments" not in table_schema[0]
+                            and "message_ftsv2_segdir" not in table_schema[0]
+                            and "message_ftsv2_docsize" not in table_schema[0]
+                            and "message_ftsv2_stat" not in table_schema[0]
+                            and "labeled_messages_fts_content" not in table_schema[0]
+                            and "labeled_messages_fts_segments" not in table_schema[0]
+                            and "labeled_messages_fts_segdir" not in table_schema[0]
+                            and "labeled_messages_fts_docsize" not in table_schema[0]
+                            and "labeled_messages_fts_stat" not in table_schema[0]
+                        ):
                             db_bucket_cur.execute(table_schema[0])
                     db_buckets[db_bucket_id] = (db_bucket_con, db_bucket_cur)
                 else:

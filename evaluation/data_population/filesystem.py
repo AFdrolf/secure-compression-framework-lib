@@ -19,7 +19,9 @@ class SimpleWhatsAppAttachment:
     filename: str
 
 
-def insert_attachment_info_in_db(cur: sqlite3.Cursor, whatsapp_attach_obj: SimpleWhatsAppAttachment, seen_principals: dict):
+def insert_attachment_info_in_db(
+    cur: sqlite3.Cursor, whatsapp_attach_obj: SimpleWhatsAppAttachment, seen_principals: dict
+):
     if whatsapp_attach_obj.interacting_principal_id not in seen_principals:
         jid_row_id = len(seen_principals) + 1
         chat_row_id = len(seen_principals) + 1
@@ -28,9 +30,8 @@ def insert_attachment_info_in_db(cur: sqlite3.Cursor, whatsapp_attach_obj: Simpl
         seen_principals[whatsapp_attach_obj.interacting_principal_id] = chat_row_id
     else:
         chat_row_id = seen_principals[whatsapp_attach_obj.interacting_principal_id]
-    
-    cur.execute(SQL["message_media_table_insert"], (chat_row_id, whatsapp_attach_obj.filename))
 
+    cur.execute(SQL["message_media_table_insert"], (chat_row_id, whatsapp_attach_obj.filename))
 
 
 def generate_filesystem_and_db(files_sender_csv: Path, db_output_path: Path):

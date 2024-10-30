@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 sys.path.append(sys.path[0] + "/../../..")
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
@@ -10,10 +10,9 @@ from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 
 class XMLSimplePartitioner(Partitioner):
-
     def _get_data(self) -> Path:
         return self.data
-    
+
     def partition(self):
         db_buckets = {}
         db_bucket_paths = []
@@ -30,7 +29,7 @@ class XMLSimplePartitioner(Partitioner):
 
             # Create empty XML file if it does not exist yet
             if db_bucket_id not in db_buckets:
-                #TODO(fix): issue with root element
+                # TODO(fix): issue with root element
                 db_bucket_root = ET.Element(db_bucket_id)
                 db_buckets[db_bucket_id] = db_bucket_root
             else:
