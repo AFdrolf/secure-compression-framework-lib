@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 sys.path.append(sys.path[0] + "/..")
 
-from evaluation.data_generation.messaging import generate_chats_LLM_prompt
+from evaluation.data_generation.messaging import generate_chats_llm_prompt
 from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     # First, generate a transcript of chats of synthetic test data, based on the input parameters
     chats_csv = args.output_dir / OUTPUT_FILENAMES["messaging_data_csv"]
-    generate_chats_LLM_prompt(args.number_chats, args.number_messages, args.communication_model, chats_csv)
+    generate_chats_llm_prompt(args.number_chats, args.number_messages, args.communication_model, chats_csv)
 
     # Then, generate and populate a WhatsApp database with this transcript
     db_path = args.output_dir / OUTPUT_FILENAMES["db"]
