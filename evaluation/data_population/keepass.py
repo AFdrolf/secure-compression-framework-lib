@@ -7,7 +7,7 @@ from typing import Optional, TextIO
 from evaluation.data_generation.keepass import KeepassCSVRow
 
 
-def generate_keepass_xml(csv_file: Path, output_dir: Path) -> None:
+def generate_keepass_xml(csv_file: Path, output_dir: Path, cleanup: bool = True) -> None:
     """Given an input CSV file, generate a Keepass XML file for testing."""
     kpcli_path = os.getenv("KPCLIPATH")
     assert kpcli_path is not None, "KPCLIPATH envvar must be set"
@@ -22,11 +22,14 @@ def generate_keepass_xml(csv_file: Path, output_dir: Path) -> None:
     keyfile_path = f"{output_dir}/{name}.key"
     db_path = f"{output_dir}/{name}.kdbx"
 
-    subprocess.run([kpcli_path, "db-create", "--set-key-file", keyfile_path, db_path])
+    subprocess.run([kpcli_path, "db-create", "--set-key-file", keyfile_path, db_path], stdout=subprocess.DEVNULL)
 
     def kpcli_cmd(cmd_list: list[str], stdout_io: Optional[TextIO] = None) -> None:
         if not stdout_io:
-            subprocess.run([kpcli_path, cmd_list[0], "--key-file", keyfile_path, "--no-password", *cmd_list[1:]])
+            subprocess.run(
+                [kpcli_path, cmd_list[0], "--key-file", keyfile_path, "--no-password", *cmd_list[1:]],
+                stdout=subprocess.DEVNULL,
+            )
         else:
             subprocess.run(
                 [kpcli_path, cmd_list[0], "--key-file", keyfile_path, "--no-password", *cmd_list[1:]], stdout=stdout_io
@@ -48,3 +51,7 @@ def generate_keepass_xml(csv_file: Path, output_dir: Path) -> None:
 
     with (output_dir / f"{name}.xml").open("w") as f:
         kpcli_cmd(["export", db_path], stdout_io=f)
+
+    if cleanup:
+        Path(keyfile_path).unlink()
+        Path(db_path).unlink()

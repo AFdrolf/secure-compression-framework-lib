@@ -1,12 +1,11 @@
 import random
 
-from evaluation.util import LONG_TAIL_MODEL_CONSTANTS
-
+from evaluation.util import generate_distribution
 
 LLM_PROMPT = ""
 
 
-def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communication_model: str, csv_output_file):
+def generate_chats_llm_prompt(number_chats: int, number_messages: int, communication_model: str, csv_output_file):
     """Given some seed parameters, generates the prompt to feed to an LLM for generating a transcript of chats.
 
     This function corresponds to a single iteration of the evaluation.
@@ -16,7 +15,7 @@ def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communica
     number_chats: Number of chats
     number_messages: Total number of messages sent across all chats
     """
-    number_messages_per_chat = generate_number_messages_chats(number_chats, number_messages, communication_model)
+    number_messages_per_chat = generate_distribution(number_chats, number_messages, communication_model)
 
     # NOTE: For testing purposes; eventually replace with call to LLM
     import csv
@@ -43,56 +42,3 @@ def generate_chats_LLM_prompt(number_chats: int, number_messages: int, communica
     with open(csv_output_file, "a", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(conversations)
-
-
-def generate_number_messages_chats(number_chats, number_messages, communication_model):
-    number_messages_per_chat = []
-
-    # All chats have the same number of messages
-    if communication_model == "even":
-        for i in range(number_chats):
-            r = number_messages // number_chats
-            number_messages_per_chat.append(r + 1 if i < number_messages % number_chats else r)
-
-    # All chats have a random number of messages
-    elif communication_model == "random":
-        number_messages_per_chat = [1] * number_chats
-        allocate_messages_randomly_to_chats(number_messages_per_chat, number_messages - number_chats)
-
-    # Most chats have a few messages, while a few chats have many messages
-    elif communication_model == "long_tail":
-        # TODO: some basic checks to make sure that input numbers always make sense (e.g., that there are enough messages for low-activity chats to have at least one message)
-        high_activity_chats_total = number_chats * LONG_TAIL_MODEL_CONSTANTS["high_activity_chats_percentage"]
-        high_activity_messages_total = number_messages * LONG_TAIL_MODEL_CONSTANTS["high_activity_messages_percentage"]
-        high_activity_chats_avg_messages = high_activity_messages_total // high_activity_chats_total
-        high_activity_chats_min_messages = (
-            high_activity_chats_avg_messages * LONG_TAIL_MODEL_CONSTANTS["high_activity_chat_min_messages"]
-        )
-
-        # First, allocate messages to the high-activity chats
-        messages_allocated = 0
-        for _ in range(high_activity_chats_total):
-            number_messages = random.randint(high_activity_chats_min_messages, high_activity_chats_avg_messages)
-            number_messages_per_chat.append(number_messages)
-            messages_allocated += number_messages
-        # If there are still messages for the high activity chats left, allocate them randomly to these
-        allocate_messages_randomly_to_chats(
-            number_messages_per_chat, high_activity_messages_total - messages_allocated
-        )
-
-        # Then, allocate remaining messages to the rest of the chats
-        low_activity_chats = [1] * (number_chats - high_activity_chats_total)
-        number_messages_per_chat += allocate_messages_randomly_to_chats(
-            low_activity_chats, number_messages - high_activity_messages_total, high_activity_chats_min_messages - 1
-        )
-
-    return number_messages_per_chat
-
-
-def allocate_messages_randomly_to_chats(chats_list, number_messages, max_messages_chat=None):
-    for _ in range(number_messages):
-        chat_ix = random.randint(0, len(chats_list) - 1)
-        while max_messages_chat and max_messages_chat <= chats_list[chat_ix]:
-            chat_ix = random.randint(0, len(chats_list) - 1)
-        chats_list[chat_ix] += 1
-    return chats_list
