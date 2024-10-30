@@ -39,8 +39,8 @@ def generate_distribution(n: int, m: int, dist: str) -> list[int]:
     elif dist == "long_tail":
         # TODO: some basic checks to make sure that input numbers always make sense (e.g., that there are enough
         #  messages for low-activity chats to have at least one message)
-        high_activity_chats_total = math.floor(n * LONG_TAIL_MODEL_CONSTANTS["high_activity_chats_percentage"])
-        high_activity_messages_total = math.floor(m * LONG_TAIL_MODEL_CONSTANTS["high_activity_messages_percentage"])
+        high_activity_chats_total = max(math.floor(n * LONG_TAIL_MODEL_CONSTANTS["high_activity_chats_percentage"]), 1)
+        high_activity_messages_total = max(math.floor(m * LONG_TAIL_MODEL_CONSTANTS["high_activity_messages_percentage"]), 1)
         high_activity_chats_avg_messages = high_activity_messages_total // high_activity_chats_total
         high_activity_chats_min_messages = (
             math.floor(high_activity_chats_avg_messages * LONG_TAIL_MODEL_CONSTANTS["high_activity_chat_min_messages"])
@@ -49,16 +49,16 @@ def generate_distribution(n: int, m: int, dist: str) -> list[int]:
         # First, allocate messages to the high-activity chats
         messages_allocated = 0
         for _ in range(high_activity_chats_total):
-            m = random.randint(high_activity_chats_min_messages, high_activity_chats_avg_messages)
-            number_messages_per_chat.append(m)
-            messages_allocated += m
+            random_m = random.randint(high_activity_chats_min_messages, high_activity_chats_avg_messages)
+            number_messages_per_chat.append(random_m)
+            messages_allocated += random_m
         # If there are still messages for the high activity chats left, allocate them randomly to these
         allocate_messages_randomly_to_chats(
             number_messages_per_chat, high_activity_messages_total - messages_allocated
         )
 
         # Then, allocate remaining messages to the rest of the chats
-        low_activity_chats = [1] * (n - high_activity_chats_total)
+        low_activity_chats = [0] * (n - high_activity_chats_total)
         number_messages_per_chat += allocate_messages_randomly_to_chats(
             low_activity_chats, m - high_activity_messages_total, high_activity_chats_min_messages - 1
         )
