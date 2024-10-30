@@ -117,7 +117,8 @@ def generate_keepass_csv(n: int, m: int, dist: str, random_passwords: bool, outp
             entry = KeepassCSVRow.generate_row(group, username + str(random.randint(0, 9)), random_passwords)
             rows.append(entry)
             # Generate password change history (assuming 1 past versions of entry)
-            new_version_entry = dataclasses.replace(entry, version=1)
+            new_password = generate_keepass_pwd() if random_passwords else generate_list_password()
+            new_version_entry = dataclasses.replace(entry, version=1, password=new_password)
             rows.append(new_version_entry)
 
     columns = [field.name for field in dataclasses.fields(KeepassCSVRow)]
