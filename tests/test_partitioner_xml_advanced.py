@@ -109,7 +109,9 @@ def example_group_uuid_as_principal_keepass_sample_xml(xml_du: XMLDataUnit) -> P
     # Find the most immediate Group ancestor in tree
     for element in reversed(xml_du.context):
         if element.tag == "Group":
-            return Principal(uuid=element.find("UUID").text)
+            uuid_element = element.find("UUID")
+            if uuid_element is not None:
+                return Principal(uuid=uuid_element.text)
     # Not under a Group
     return Principal(null=True)
 
