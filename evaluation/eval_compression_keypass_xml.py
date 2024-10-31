@@ -31,41 +31,42 @@ if __name__ == "__main__":
     dist_list = args.dist
     random_password = [True, False]
 
-    stats_columns = [["n", "m", "dist", "random_password", "raw_bytes", "compressed_bytes", "safe_compressed_bytes"]]
-    for n in n_list:
-        for m in m_list:
-            for dist in dist_list:
-                for rp in random_password:
-                    csv_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.csv"
-                    xml_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml"
-                    generate_keepass_csv(n, m, dist, rp, csv_path)
-                    generate_keepass_xml(csv_path, args.output_dir, cleanup)
-                    partition_compressed_bytes = compress_xml_advanced_by_element(
-                        xml_path, example_group_uuid_as_principal_keepass_sample_xml
-                    )
-                    partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz.safe"
-                    partition_path.write_bytes(partition_compressed_bytes)
-                    compress_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz"
-                    compress_file(xml_path, compress_path)
-
-                    stats_columns.append(
-                        [
-                            n,
-                            m,
-                            dist,
-                            rp,
-                            xml_path.stat().st_size,
-                            compress_path.stat().st_size,
-                            partition_path.stat().st_size,
-                        ]
-                    )
-
-                    if cleanup:
-                        csv_path.unlink()
-                        xml_path.unlink()
-                        partition_path.unlink()
-                        compress_path.unlink()
+    stats_columns = ["n", "m", "dist", "random_password", "raw_bytes", "compressed_bytes", "safe_compressed_bytes"]
 
     with Path(args.output_dir / "stats.csv").open("w") as f:
         writer = csv.writer(f)
-        writer.writerows(stats_columns)
+        writer.writerow(stats_columns)
+        for n in n_list:
+            for m in m_list:
+                for dist in dist_list:
+                    for rp in random_password:
+                        csv_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.csv"
+                        xml_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml"
+                        generate_keepass_csv(n, m, dist, rp, csv_path)
+                        generate_keepass_xml(csv_path, args.output_dir, cleanup)
+                        partition_compressed_bytes = compress_xml_advanced_by_element(
+                            xml_path, example_group_uuid_as_principal_keepass_sample_xml
+                        )
+                        partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz.safe"
+                        partition_path.write_bytes(partition_compressed_bytes)
+                        compress_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz"
+                        compress_file(xml_path, compress_path)
+
+                        writer.writerow(
+                            [
+                                n,
+                                m,
+                                dist,
+                                rp,
+                                xml_path.stat().st_size,
+                                compress_path.stat().st_size,
+                                partition_path.stat().st_size,
+                            ]
+                        )
+
+                        print(f"Finished {n} {m} {dist} {rp}")
+                        if cleanup:
+                            csv_path.unlink()
+                            xml_path.unlink()
+                            partition_path.unlink()
+                            compress_path.unlink()
