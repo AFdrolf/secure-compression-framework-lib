@@ -1,6 +1,8 @@
 from collections.abc import Callable
 from pathlib import Path
 from xml.etree import ElementTree
+from xml.sax import saxutils
+
 
 from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
@@ -11,7 +13,11 @@ def generate_start_tag(element: ElementTree.Element) -> str:
     tag = f"<{element.tag}"
     for key, value in element.attrib.items():
         tag += f' {key}="{value}"'
-    tag += f">{element.text}"
+    if element.text:
+        text = saxutils.escape(element.text)
+    else:
+        text = element.text
+    tag += f">{text}"
     return tag
 
 
@@ -21,7 +27,7 @@ def generate_end_tag(element: ElementTree.Element) -> str:
         tail = element.tail
     else:
         tail = "\n"
-    return f"</{element.tag}>{tail}"
+    return f"</{element.tag}>{saxutils.escape(tail)}"
 
 
 class XmlAdvancedPartitioner(Partitioner):
