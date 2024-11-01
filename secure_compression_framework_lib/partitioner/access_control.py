@@ -1,7 +1,9 @@
 """Implements access control functionality for use by partitioner."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
+from xml.etree import ElementTree
 
 
 class Principal:
@@ -60,3 +62,19 @@ def basic_partition_policy(p: Principal) -> str:
 def attribute_based_partition_policy(p: Principal, attr: str) -> str:
     """Partitions based on a given attribute of the principal e.g. is_contact."""
     return str(p.__getattribute__(attr))
+
+
+@dataclass
+class XMLDataUnit:
+    """An XMLDataUnit is the unit which is mapped to a Principal.
+
+    The unit we actually want to map to a Principal is an XML element, but to do this mapping we need some context for
+    the element. To see why this is necessary imagine the case where an XML file has nested elements that both have the
+    name "user".
+    """
+
+    context: list[ElementTree.Element]  # List of parent elements, starting from root
+
+    @property
+    def element(self) -> ElementTree.Element:
+        return self.context[-1]

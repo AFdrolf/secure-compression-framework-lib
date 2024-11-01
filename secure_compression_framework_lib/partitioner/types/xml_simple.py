@@ -1,7 +1,9 @@
-import os
 import sys
 import xml.etree.ElementTree as ET
+from collections import defaultdict
 from pathlib import Path
+
+from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
 
 sys.path.append(sys.path[0] + "/../../..")
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
@@ -13,38 +15,66 @@ class XMLSimplePartitioner(Partitioner):
     def _get_data(self) -> Path:
         return self.data
 
-    def partition(self):
-        db_buckets = {}
-        db_bucket_paths = []
-
-        tree = ET.parse(self.data)
-        root = tree.getroot()
+    def partition(self) -> dict[str, bytes]:
+        db_buckets = defaultdict(list)
+        parent_stack = []
+        to_remove = defaultdict(list)
 
         # First, iterate through all XML elements
-        for xml_element in root.findall(".//*"):
-            principal = self.access_control_policy(xml_element)
-            if principal == None:
+        for event, element in ET.iterparse(self._get_data(), events=["start", "end"]):
+            if event == "start":
+                parent_stack.append(element)
+                data_unit = XMLDataUnit(parent_stack)
+            else:
+                parent_stack.pop()
+                if element in to_remove:
+                    for e in to_remove[element]:
+                        element.remove(e)
                 continue
+
+            principal = self.access_control_policy(data_unit)
             db_bucket_id = self.partition_policy(principal)
 
-            # Create empty XML file if it does not exist yet
-            if db_bucket_id not in db_buckets:
-                # TODO(fix): issue with root element
-                db_bucket_root = ET.Element(db_bucket_id)
-                db_buckets[db_bucket_id] = db_bucket_root
+            if len(parent_stack) > 1:
+                parent_bucket_id = self.partition_policy(self.access_control_policy(XMLDataUnit(parent_stack[:-1])))
             else:
-                db_bucket_root = db_buckets[db_bucket_id]
+                # This should only execute for the root element
+                db_buckets[db_bucket_id].append((element, []))
+                continue
 
-            # Then, add element to its respective bucket DB
-            db_bucket_root.append(xml_element)
+            if db_bucket_id != parent_bucket_id:
+                # Remove current element from parent element
+                to_remove[parent_stack[-2]].append(element)
 
-        for db_bucket_id, db_bucket_root in db_buckets.items():
-            db_bucket_tree = ET.ElementTree(db_bucket_root)
-            db_bucket_path = Path(self.data.parent, str(db_bucket_id) + "_" + self.data.name)
-            db_bucket_paths.append(db_bucket_path)
-            db_bucket_tree.write(db_bucket_path, encoding="utf-8", xml_declaration=True)
+                # Store path to element along with element so that we can merge element with metadata
+                db_buckets[db_bucket_id].append((element, [e.tag for e in parent_stack[:-1]]))
+            else:
+                continue
 
-        return db_bucket_paths
+        # Create bucketed trees by merging elements in each bucket with metadata
+        tree_buckets = {}
+
+        for k, element_list in db_buckets.items():
+            for e, path in sorted(element_list, key=lambda x: len(x[1])):
+                if not path:
+                    # Handle root element
+                    tree_buckets[k] = e
+                    continue
+                if k not in tree_buckets:
+                    tree_buckets[k] = ET.Element(path[0])
+                target_element = tree_buckets[k]
+                for p in path[1:]:
+                    if tree_buckets[k].find(p):
+                        target_element = target_element.find(p)
+                    else:
+                        target_element = ET.SubElement(target_element, p)
+
+                e.set("bucketed", "true")  # Signals that an element is bucketed, for use when recombining
+                target_element.append(e)
+
+            ET.indent(tree_buckets[k], space="   ")
+
+        return {k: ET.tostring(v) for k, v in tree_buckets.items()}
 
 
 # For testing, delete later
@@ -132,4 +162,4 @@ if __name__ == "__main__":
 
     partitioner = XMLSimplePartitioner(Path(db_name), access, partition_policy)
 
-    partitioner.partition()
+    print(partitioner.partition())

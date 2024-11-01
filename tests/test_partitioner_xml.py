@@ -1,8 +1,9 @@
 from pathlib import Path
 from xml.etree import ElementTree
 
-from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy
-from secure_compression_framework_lib.partitioner.types.xml_advanced import XmlAdvancedPartitioner, XMLDataUnit
+from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit, basic_partition_policy
+from secure_compression_framework_lib.partitioner.types.xml_advanced import XmlAdvancedPartitioner
+from secure_compression_framework_lib.partitioner.types.xml_simple import XMLSimplePartitioner
 
 
 def example_author_as_principal_books_xml(xml_du: XMLDataUnit) -> Principal:
@@ -123,3 +124,24 @@ def test_partitioner_xml_advanced_keepass_group_as_principal():
     )
     out = partitioner.partition()
     assert len(out) == 6
+
+
+def test_partitioner_xml_simple_author_as_principal():
+    path = Path(__file__).parent / "example_data/books.xml"
+    book_elements = ElementTree.parse(path).getroot().findall(".//book")
+    partitioner = XMLSimplePartitioner(path, example_author_as_principal_books_xml, basic_partition_policy)
+    out = partitioner.partition()
+    assert len(out) == 11
+    assert out[str(Principal(null=True))] == b"<catalog>\n   </catalog>"
+    book_elements[0].set("bucketed", "true")
+    assert (
+        out[str(Principal(first_name="Matthew", last_name="Gambardella"))]
+        == b"<catalog>\n   " + ElementTree.tostring(book_elements[0])[:-3] + b"</catalog>"
+    )
+
+
+def test_partitioner_xml_simple_keepass_group_as_principal():
+    path = Path(__file__).parent / "example_data/keepass_sample.xml"
+    partitioner = XMLSimplePartitioner(path, example_group_uuid_as_principal_keepass_sample_xml, basic_partition_policy)
+    out = partitioner.partition()
+    assert len(out) == 4

@@ -6,7 +6,7 @@ from evaluation.data_generation.keepass import generate_keepass_csv
 from evaluation.data_population.keepass import generate_keepass_xml
 from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element
-from tests.test_partitioner_xml_advanced import example_group_uuid_as_principal_keepass_sample_xml
+from tests.test_partitioner_xml import example_group_uuid_as_principal_keepass_sample_xml
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

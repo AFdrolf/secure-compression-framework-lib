@@ -8,9 +8,14 @@ from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
     compress_xml_advanced_by_element,
     decompress_xml_advanced_by_element,
 )
+from secure_compression_framework_lib.end_to_end.compress_xml_simple import compress_xml_simple, decompress_xml_simple
 from secure_compression_framework_lib.end_to_end.dedup_files import dedup_files_by_name
 from secure_compression_framework_lib.multi_stream.compress import ZlibCompressionStream
-from tests.test_partitioner_xml_advanced import example_author_as_principal_books_xml
+from secure_compression_framework_lib.partitioner.access_control import basic_partition_policy
+from tests.test_partitioner_xml import (
+    example_author_as_principal_books_xml,
+    example_group_uuid_as_principal_keepass_sample_xml,
+)
 
 
 @pytest.fixture()
@@ -52,17 +57,27 @@ def trees_equivalent(tree1, tree2):
         return False
     if len(tree1) != len(tree2):
         return False
-    for child1, child2 in zip(tree1, tree2):
+
+    alphabetical_tree1 = sorted([c for c in tree1], key=lambda c: c.tag)
+    alphabetical_tree2 = sorted([c for c in tree2], key=lambda c: c.tag)
+    for child1, child2 in zip(alphabetical_tree1, alphabetical_tree2):
         if not trees_equivalent(child1, child2):
             return False
     return True
 
 
-def test_compress_xml_advanced_basic():
-    path = Path(__file__).parent / "example_data/books.xml"
+@pytest.mark.parametrize(
+    "file,policy",
+    [
+        ("books.xml", example_author_as_principal_books_xml),
+        ("keepass_sample.xml", example_group_uuid_as_principal_keepass_sample_xml),
+    ],
+)
+def test_compress_xml_advanced_basic(file, policy):
+    path = Path(__file__).parent / f"example_data/{file}"
     et_before = ElementTree.parse(path).getroot()
 
-    partition_compressed_bytes = compress_xml_advanced_by_element(path, example_author_as_principal_books_xml)
+    partition_compressed_bytes = compress_xml_advanced_by_element(path, policy)
     partition_decompressed_bytes = decompress_xml_advanced_by_element(partition_compressed_bytes)
     et_after = ElementTree.fromstring(partition_decompressed_bytes)
 
@@ -70,7 +85,30 @@ def test_compress_xml_advanced_basic():
     cs.compress(path.read_bytes())
     regular_compressed_bytes = cs.finish()
 
-    # Adversary inserted a final book that without partitioning gets compressed with the previous book
     assert len(partition_compressed_bytes) > len(regular_compressed_bytes)
+
+    assert trees_equivalent(et_before, et_after)
+
+
+@pytest.mark.parametrize(
+    "file,policy",
+    [
+        ("books.xml", example_author_as_principal_books_xml),
+        ("keepass_sample.xml", example_group_uuid_as_principal_keepass_sample_xml),
+    ],
+)
+def test_compress_xml_simple_basic(file, policy):
+    path = Path(__file__).parent / f"example_data/{file}"
+    et_before = ElementTree.parse(path).getroot()
+
+    partition_compressed_bytes = compress_xml_simple(path, policy, basic_partition_policy)
+    partition_decompressed_bytes = decompress_xml_simple(partition_compressed_bytes)
+    et_after = ElementTree.fromstring(partition_decompressed_bytes)
+
+    cs = ZlibCompressionStream()
+    cs.compress(path.read_bytes())
+    regular_compressed_bytes = cs.finish()
+
+    assert sum(len(x) for x in partition_compressed_bytes) > len(regular_compressed_bytes)
 
     assert trees_equivalent(et_before, et_after)

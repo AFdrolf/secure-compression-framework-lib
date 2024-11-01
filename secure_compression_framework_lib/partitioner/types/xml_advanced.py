@@ -1,26 +1,9 @@
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree
 
-from secure_compression_framework_lib.partitioner.access_control import Principal
+from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
-
-
-@dataclass
-class XMLDataUnit:
-    """An XMLDataUnit is the unit which is mapped to a Principal.
-
-    The unit we actually want to map to a Principal is an XML element, but to do this mapping we need some context for
-    the element. To see why this is necessary imagine the case where an XML file has nested elements that both have the
-    name "user".
-    """
-
-    context: list[ElementTree.Element]  # List of parent elements, starting from root
-
-    @property
-    def element(self) -> ElementTree.Element:
-        return self.context[-1]
 
 
 def generate_start_tag(element: ElementTree.Element) -> str:
