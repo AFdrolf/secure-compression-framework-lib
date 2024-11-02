@@ -22,7 +22,7 @@ if __name__ == "__main__":
         type=str,
         default=["even"],
     )
-    parser.add_argument("--simple", help="Use simple partitioner", action="store_true")
+    # parser.add_argument("--simple", help="Use simple partitioner", action="store_true")
     parser.add_argument(
         "--no-cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
     )
@@ -32,9 +32,9 @@ if __name__ == "__main__":
     n_list = args.n
     m_list = args.m
     dist_list = args.dist
-    random_password = [True, False]
+    random_password = [True]
 
-    stats_columns = ["n", "m", "dist", "random_password", "raw_bytes", "compressed_bytes", "safe_compressed_bytes"]
+    stats_columns = ["n", "m", "dist", "random_password", "raw_bytes", "compressed_bytes", "safe_compressed_bytes_simple", "safe_compressed_bytes_advanced"]
 
     with Path(args.output_dir / "stats.csv").open("w") as f:
         writer = csv.writer(f)
@@ -51,26 +51,25 @@ if __name__ == "__main__":
                         compress_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz"
                         compress_file(xml_path, compress_path)
 
-                        if args.simple:
-                            partition_compressed_bytes = compress_xml_simple(
-                                xml_path, example_group_uuid_as_principal_keepass_sample_xml, basic_partition_policy
-                            )
-                            safe_size = 0
-                            for i, b in enumerate(partition_compressed_bytes):
-                                partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}_{i}.xml.gz.safe"
-                                partition_path.write_bytes(b)
-                                safe_size += partition_path.stat().st_size
-                                if cleanup:
-                                    partition_path.unlink()
-                        else:
-                            partition_compressed_bytes = compress_xml_advanced_by_element(
-                                xml_path, example_group_uuid_as_principal_keepass_sample_xml
-                            )
-                            partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz.safe"
-                            partition_path.write_bytes(partition_compressed_bytes)
-                            safe_size = partition_path.stat().st_size
+                        partition_compressed_bytes = compress_xml_simple(
+                            xml_path, example_group_uuid_as_principal_keepass_sample_xml, basic_partition_policy
+                        )
+                        simple_safe_size = 0
+                        for i, b in enumerate(partition_compressed_bytes):
+                            partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}_{i}.xml.gz.safe.simple"
+                            partition_path.write_bytes(b)
+                            simple_safe_size += partition_path.stat().st_size
                             if cleanup:
                                 partition_path.unlink()
+
+                        partition_compressed_bytes = compress_xml_advanced_by_element(
+                            xml_path, example_group_uuid_as_principal_keepass_sample_xml
+                        )
+                        partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz.safe.advanced"
+                        partition_path.write_bytes(partition_compressed_bytes)
+                        advanced_safe_size = partition_path.stat().st_size
+                        if cleanup:
+                            partition_path.unlink()
 
                         writer.writerow(
                             [
@@ -80,7 +79,8 @@ if __name__ == "__main__":
                                 rp,
                                 xml_path.stat().st_size,
                                 compress_path.stat().st_size,
-                                safe_size,
+                                simple_safe_size,
+                                advanced_safe_size
                             ]
                         )
                         print(f"Finished {n} {m} {dist} {rp}")
