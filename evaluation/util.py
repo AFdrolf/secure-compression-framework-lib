@@ -83,3 +83,9 @@ def compress_file(in_path: Path, out_path: Path):
     b = in_path.read_bytes()
     c = zlib.compress(b)
     out_path.write_bytes(c)
+
+
+def decompress_file(in_path: Path) -> bytes:
+    b = in_path.read_bytes()
+    d = zlib.decompress(b)
+    return d
