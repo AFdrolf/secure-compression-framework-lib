@@ -3,7 +3,6 @@ from pathlib import Path
 from xml.etree import ElementTree
 from xml.sax import saxutils
 
-
 from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 

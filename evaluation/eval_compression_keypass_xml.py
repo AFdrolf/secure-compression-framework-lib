@@ -34,7 +34,16 @@ if __name__ == "__main__":
     dist_list = args.dist
     random_password = [True]
 
-    stats_columns = ["n", "m", "dist", "random_password", "raw_bytes", "compressed_bytes", "safe_compressed_bytes_simple", "safe_compressed_bytes_advanced"]
+    stats_columns = [
+        "n",
+        "m",
+        "dist",
+        "random_password",
+        "raw_bytes",
+        "compressed_bytes",
+        "safe_compressed_bytes_simple",
+        "safe_compressed_bytes_advanced",
+    ]
 
     with Path(args.output_dir / "stats.csv").open("w") as f:
         writer = csv.writer(f)
@@ -80,7 +89,7 @@ if __name__ == "__main__":
                                 xml_path.stat().st_size,
                                 compress_path.stat().st_size,
                                 simple_safe_size,
-                                advanced_safe_size
+                                advanced_safe_size,
                             ]
                         )
                         print(f"Finished {n} {m} {dist} {rp}")

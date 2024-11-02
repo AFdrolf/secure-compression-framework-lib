@@ -6,8 +6,10 @@ from pathlib import Path
 from evaluation.data_generation.keepass import generate_keepass_csv
 from evaluation.data_population.keepass import generate_keepass_xml
 from evaluation.util import compress_file, decompress_file
-from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element, \
-    decompress_xml_advanced_by_element
+from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
+    compress_xml_advanced_by_element,
+    decompress_xml_advanced_by_element,
+)
 from tests.test_partitioner_xml import example_group_uuid_as_principal_keepass_sample_xml
 
 if __name__ == "__main__":
@@ -25,29 +27,33 @@ if __name__ == "__main__":
     compress_path = args.output_dir / f"timing.xml.gz"
     compress_func = functools.partial(compress_file, xml_path, compress_path)
 
-    compress_time = timeit.timeit('compress_func()', setup="from __main__ import compress_func", number=trials)
+    compress_time = timeit.timeit("compress_func()", setup="from __main__ import compress_func", number=trials)
 
     decompress_func = functools.partial(decompress_file, compress_path)
 
-    decompress_time = timeit.timeit('decompress_func()', setup="from __main__ import decompress_func", number=trials)
+    decompress_time = timeit.timeit("decompress_func()", setup="from __main__ import decompress_func", number=trials)
 
     partition_path = args.output_dir / f"timing.xml.gz.safe"
+
     def safe_compress_func():
         partition_compressed_bytes = compress_xml_advanced_by_element(
             xml_path, example_group_uuid_as_principal_keepass_sample_xml
         )
         partition_path.write_bytes(partition_compressed_bytes)
 
-    safe_compress_time = timeit.timeit(safe_compress_func, setup="from __main__ import safe_compress_func", number=trials)
+    safe_compress_time = timeit.timeit(
+        safe_compress_func, setup="from __main__ import safe_compress_func", number=trials
+    )
 
     def safe_decompress_func():
         b = partition_path.read_bytes()
         decompress_xml_advanced_by_element(b)
 
-    safe_decompress_time = timeit.timeit(safe_decompress_func, setup="from __main__ import safe_decompress_func", number=trials)
+    safe_decompress_time = timeit.timeit(
+        safe_decompress_func, setup="from __main__ import safe_decompress_func", number=trials
+    )
 
     print(f"Normal compress time: {compress_time/trials*1000}")
     print(f"Safe compress time: {safe_compress_time/trials*1000}")
     print(f"Normal decompress time: {decompress_time/trials*1000}")
     print(f"Safe decompress time: {safe_decompress_time/trials*1000}")
-

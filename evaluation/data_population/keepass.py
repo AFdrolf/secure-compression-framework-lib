@@ -26,9 +26,11 @@ def generate_keepass_xml(csv_file: Path, output_dir: Path, cleanup: bool = True)
 
     subprocess.run([kpcli_path, "db-create", "--set-key-file", keyfile_path, db_path], stdout=subprocess.DEVNULL)
 
-    def kpcli_cmd_args(cmd_list: list[str], bytes_in: Optional[bytes] = None, stdout_io: Optional[TextIO] = None) -> dict:
+    def kpcli_cmd_args(
+        cmd_list: list[str], bytes_in: Optional[bytes] = None, stdout_io: Optional[TextIO] = None
+    ) -> dict:
         if not stdout_io:
-            return{
+            return {
                 "args": [kpcli_path, cmd_list[0], "--key-file", keyfile_path, "--no-password", *cmd_list[1:]],
                 "input": bytes_in,
                 "stdout": subprocess.DEVNULL,
@@ -48,14 +50,16 @@ def generate_keepass_xml(csv_file: Path, output_dir: Path, cleanup: bool = True)
     for row in rows[1:]:
         entry = KeepassCSVRow(**{k: v for k, v in zip(columns, row)})
         if int(entry.version) > 0:
-            kpcli_cmds.append(kpcli_cmd_args(
-                ["edit", db_path, entry.account_name, "-p"], bytes_in=entry.password.encode("utf-8")
-            )) # New password for account
+            kpcli_cmds.append(
+                kpcli_cmd_args(["edit", db_path, entry.account_name, "-p"], bytes_in=entry.password.encode("utf-8"))
+            )  # New password for account
             continue
-        kpcli_cmds.append(kpcli_cmd_args(
-            ["add", "-u", entry.username, "--url", entry.url, "-p", db_path, entry.account_name],
-            bytes_in=entry.password.encode("utf-8"),
-        ))
+        kpcli_cmds.append(
+            kpcli_cmd_args(
+                ["add", "-u", entry.username, "--url", entry.url, "-p", db_path, entry.account_name],
+                bytes_in=entry.password.encode("utf-8"),
+            )
+        )
         if entry.group != "Root":
             if entry.group not in groups:
                 kpcli_cmds.append(kpcli_cmd_args(["mkdir", db_path, entry.group]))
