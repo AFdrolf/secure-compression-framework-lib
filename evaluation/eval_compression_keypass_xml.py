@@ -6,6 +6,8 @@ from evaluation.data_generation.keepass import generate_keepass_csv
 from evaluation.data_population.keepass import generate_keepass_xml
 from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element
+from secure_compression_framework_lib.end_to_end.compress_xml_simple import compress_xml_simple
+from secure_compression_framework_lib.partitioner.access_control import basic_partition_policy
 from tests.test_partitioner_xml import example_group_uuid_as_principal_keepass_sample_xml
 
 if __name__ == "__main__":
@@ -20,6 +22,7 @@ if __name__ == "__main__":
         type=str,
         default=["even"],
     )
+    parser.add_argument("--simple", help="Use simple partitioner", action="store_true")
     parser.add_argument(
         "--disable-cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
     )
@@ -44,13 +47,30 @@ if __name__ == "__main__":
                         xml_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml"
                         generate_keepass_csv(n, m, dist, rp, csv_path)
                         generate_keepass_xml(csv_path, args.output_dir, cleanup)
-                        partition_compressed_bytes = compress_xml_advanced_by_element(
-                            xml_path, example_group_uuid_as_principal_keepass_sample_xml
-                        )
-                        partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz.safe"
-                        partition_path.write_bytes(partition_compressed_bytes)
+
                         compress_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz"
                         compress_file(xml_path, compress_path)
+
+                        if args.simple:
+                            partition_compressed_bytes = compress_xml_simple(
+                                xml_path, example_group_uuid_as_principal_keepass_sample_xml, basic_partition_policy
+                            )
+                            safe_size = 0
+                            for i, b in enumerate(partition_compressed_bytes):
+                                partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}_{i}.xml.gz.safe"
+                                partition_path.write_bytes(b)
+                                safe_size += partition_path.stat().st_size
+                                if cleanup:
+                                    partition_path.unlink()
+                        else:
+                            partition_compressed_bytes = compress_xml_advanced_by_element(
+                                xml_path, example_group_uuid_as_principal_keepass_sample_xml
+                            )
+                            partition_path = args.output_dir / f"{n}_{m}_{dist}_{rp}.xml.gz.safe"
+                            partition_path.write_bytes(partition_compressed_bytes)
+                            safe_size = partition_path.stat().st_size
+                            if cleanup:
+                                partition_path.unlink()
 
                         writer.writerow(
                             [
@@ -60,13 +80,11 @@ if __name__ == "__main__":
                                 rp,
                                 xml_path.stat().st_size,
                                 compress_path.stat().st_size,
-                                partition_path.stat().st_size,
+                                safe_size,
                             ]
                         )
-
                         print(f"Finished {n} {m} {dist} {rp}")
                         if cleanup:
                             csv_path.unlink()
                             xml_path.unlink()
-                            partition_path.unlink()
                             compress_path.unlink()
