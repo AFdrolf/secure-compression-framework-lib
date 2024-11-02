@@ -24,10 +24,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--simple", help="Use simple partitioner", action="store_true")
     parser.add_argument(
-        "--disable-cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
+        "--no-cleanup", help="Remove csv/keepass/xml files generated for evaluation", action="store_true"
     )
     args = parser.parse_args()
-    cleanup = not args.disable_cleanup
+    cleanup = not args.no_cleanup
 
     n_list = args.n
     m_list = args.m
