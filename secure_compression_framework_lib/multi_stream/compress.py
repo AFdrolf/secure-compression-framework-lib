@@ -292,19 +292,12 @@ class MSDecompressor:
             pointers_stream[stream_key] = 0
             decompression_stream.finish()
 
-        decompressed_ordered = b""
+        split_decompressed_bytes = {
+            stream_key: self.decompression_streams[stream_key].decompressed.split(self.stream_switch_delimiter)
+            for stream_key in self.decompression_streams.keys()
+        }
+        decompressed_ordered = bytearray()
         for stream in self.stream_switch:
-            decompressed = b""
-            i = pointers_stream[stream]
-            while True:
-                compressed_chunk = self.decompression_streams[stream].decompressed[
-                    i : i + len(self.stream_switch_delimiter)
-                ]
-                if compressed_chunk != self.stream_switch_delimiter:
-                    decompressed += compressed_chunk[0:1]
-                    i += 1
-                else:
-                    decompressed_ordered += decompressed
-                    pointers_stream[stream] = i + len(self.stream_switch_delimiter)
-                    break
+            decompressed_ordered.extend(split_decompressed_bytes[stream].pop(0))
+
         return decompressed_ordered
