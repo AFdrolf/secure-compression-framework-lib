@@ -37,11 +37,7 @@ def insert_message(db_name, gid, from_me, content):
     conn.close()
 
 
-def generate_test_db_sqlite(output_dir, delete_old=True):
-    if delete_old:
-        path = output_dir + "/*.db"
-        for file in glob.glob(path):
-            os.remove(file)
+def generate_test_db_sqlite(output_dir):
 
     db_name = output_dir + "/test_messages.db"
     create_messages_db(db_name)

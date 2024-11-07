@@ -1,7 +1,5 @@
-import sys
 from pathlib import Path
 
-sys.path.append(sys.path[0] + "/..")
 from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy
 from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit, SQLiteSimplePartitioner
 from tests.example_data.generate_test_db_sqlite import generate_test_db_sqlite
@@ -24,9 +22,9 @@ def example_sender_partition_policy(principal: Principal):
     return principal.gid
 
 
-def test_partitioner_sqlite_simple():
-    # test_db_sqlite = Path(generate_test_db_sqlite(output_dir))
-    # partitioner = SQLiteSimplePartitioner(test_db_sqlite, example_extract_principal_from_sqlite, example_sender_partition_policy)
-    # out = partitioner.partition()
-    # assert len(out) == 4
+def test_partitioner_sqlite_simple(tmpdir):
+    test_db_sqlite = Path(generate_test_db_sqlite(tmpdir))
+    partitioner = SQLiteSimplePartitioner(test_db_sqlite, example_extract_principal_from_sqlite, example_sender_partition_policy)
+    out = partitioner.partition()
+    assert len(out) == 4
     pass
