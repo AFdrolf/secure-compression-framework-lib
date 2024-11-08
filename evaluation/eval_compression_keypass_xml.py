@@ -45,7 +45,7 @@ if __name__ == "__main__":
         "safe_compressed_bytes_advanced",
     ]
 
-    with Path(args.output_dir / "stats.csv").open("w") as f:
+    with Path(args.output_dir / "keypass_stats.csv").open("w") as f:
         writer = csv.writer(f)
         writer.writerow(stats_columns)
         for n in n_list:
