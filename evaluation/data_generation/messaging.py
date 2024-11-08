@@ -1,44 +1,55 @@
+import csv
 import random
+import time
+from pathlib import Path
+
+from faker import Faker
 
 from evaluation.util import generate_distribution
 
-LLM_PROMPT = ""
 
-
-def generate_chats_llm_prompt(number_chats: int, number_messages: int, communication_model: str, csv_output_file):
-    """Given some seed parameters, generates the prompt to feed to an LLM for generating a transcript of chats.
-
-    This function corresponds to a single iteration of the evaluation.
+def generate_messaging_csv(n: int, m: int, dist: str, output_path: Path):
+    """Given some parameters, generate a CSV containing messaging data.
 
     Args:
     -----
-    number_chats: Number of chats
-    number_messages: Total number of messages sent across all chats
+    n: Number of messaging groups
+    m: Number of messages across entire database
+    dist: Distribution of the number of messages for a group ("even", "random" or "long_tail")
+    output_path: Output path for generated CSV file
+
     """
-    number_messages_per_chat = generate_distribution(number_chats, number_messages, communication_model)
+    group_num_messages = generate_distribution(n, m, dist)
+    faker = Faker()
+    user = faker.name()
+    rows = [["sender", "recipient", "text", "timestamp"]]
 
-    # NOTE: For testing purposes; eventually replace with call to LLM
-    import csv
-    import time
-    from pathlib import Path
+    conversations_path = Path(__file__).parent.parent / "helper_data" / "conversations.txt"
+    with conversations_path.open() as f:
+        conversations = f.readlines()
+    random.shuffle(conversations)
 
-    from faker import Faker
+    for c, num_messages in enumerate(group_num_messages):
+        users = [user, faker.name()]
+        added_messages = 0
+        while added_messages < num_messages:
+            timestamp = int(time.time() - random.randint(0, int(3.15e7)))
+            initiator = random.randint(0, 1)
+            for i, m in enumerate(conversations[c][:-1].split(" \\")):
+                sender = users[(initiator + i) % 2]
+                recipient = users[(initiator + i + 1) % 2]
+                rows.append([sender, recipient, m, timestamp])
+                timestamp += random.randint(1, 10 * 60)
+                added_messages += 1
+                if added_messages > num_messages:
+                    break
 
-    message_generator = Faker()
-    conversations = []
-    for n in range(len(number_messages_per_chat)):
-        # Sample a random phone number for the principal in this chat
-        principal = random.randint(100000000, 9999999999)
-        # For every message in this chat, flip a coin to determine if it was sent or received, and then sample a random timestamp (in the past week) and a random text
-        for _ in range(n):
-            from_owner = random.randint(0, 1)
-            timestamp = int(time.time() * 1000) - random.randint(
-                0, 604800000
-            )  # 604800000 is the number of milliseconds in a week
-            text = message_generator.sentence()
-            sender, recipient = ("owner", principal) if from_owner else (principal, "owner")
-            conversations.append((sender, recipient, text, timestamp))
-    conversations.sort(key=lambda message: message[3])
-    with open(csv_output_file, "a", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerows(conversations)
+    with output_path.open("w") as f:
+        writer = csv.writer(f)
+        writer.writerows(rows)
+
+
+if __name__ == "__main__":
+    generate_messaging_csv(
+        2, 10, "even", Path("/Users/sjb373/data/secure-compression-framework-lib/sjb_local/messages.csv")
+    )

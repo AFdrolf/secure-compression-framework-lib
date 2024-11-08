@@ -48,6 +48,7 @@ def insert_message_in_db(cur: sqlite3.Cursor, whatsapp_message_obj: SimpleWhatsA
 def parse_transcript_csv(chats_csv: Path):
     with open(chats_csv, mode="r", newline="", encoding="utf-8") as f:
         chats_csv_reader = csv.reader(f)
+        next(chats_csv_reader, None)
         for row in chats_csv_reader:
             yield row
 
