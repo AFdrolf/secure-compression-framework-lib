@@ -13,7 +13,7 @@ from secure_compression_framework_lib.partitioner.types.xml_simple import XMLSim
 
 
 def compress_xml_simple(
-    xml_file: Path, access_control_policy: Callable[[XMLDataUnit], Principal], partition_policy
+    xml_file: Path, access_control_policy: Callable[[XMLDataUnit], Principal], partition_policy: Callable[[Principal], str]
 ) -> list[bytes]:
     partitioner = XMLSimplePartitioner(xml_file, access_control_policy, partition_policy)
     bucketed_data = partitioner.partition()
