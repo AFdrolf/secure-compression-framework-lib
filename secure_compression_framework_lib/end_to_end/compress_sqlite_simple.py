@@ -14,7 +14,7 @@ def compress_sqlite_simple(
     partitioner = SQLiteSimplePartitioner(db_path, access_control_policy, partition_policy)
     db_bucket_paths = partitioner.partition()
 
-    msc = MSCompressor(ZlibCompressionStream)
+    msc = MSCompressor(ZlibCompressionStream, stream_switch_delimiter=b"[|\\")
     for db_bucket_path in db_bucket_paths:
         with db_bucket_path.open(mode="rb") as f:
             msc.compress(db_bucket_path.name, f.read())
