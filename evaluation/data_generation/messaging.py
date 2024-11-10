@@ -1,3 +1,4 @@
+import copy
 import csv
 import random
 import time
@@ -21,7 +22,7 @@ def generate_messaging_csv(n: int, m: int, dist: str, output_path: Path):
     """
     group_num_messages = generate_distribution(n, m, dist)
     faker = Faker()
-    user = faker.name()
+    user = "owner"
     rows = [["sender", "recipient", "text", "timestamp"]]
 
     conversations_path = Path(__file__).parent.parent / "helper_data" / "conversations.txt"
@@ -29,20 +30,28 @@ def generate_messaging_csv(n: int, m: int, dist: str, output_path: Path):
         conversations = f.readlines()
     random.shuffle(conversations)
 
-    for c, num_messages in enumerate(group_num_messages):
-        users = [user, faker.name()]
+    conversation_index = 0
+    groups = [faker.name() for _ in range(len(group_num_messages))]
+    groups_to_messages = {groups[i]: group_num_messages[i] for i in range(len(groups))}
+
+    timestamp = int(time.time() - 3.15e7) # One year ago
+
+    while max(groups_to_messages.values()) > 0:
+        # Random choice of group weighted by number of messages left to send
+        g = random.choices(*zip(*groups_to_messages.items()))[0]
+        users = [user, g]
+
+        initiator = random.randint(0, 1)
         added_messages = 0
-        while added_messages < num_messages:
-            timestamp = int(time.time() - random.randint(0, int(3.15e7)))
-            initiator = random.randint(0, 1)
-            for i, m in enumerate(conversations[c][:-1].split(" \\")):
-                sender = users[(initiator + i) % 2]
-                recipient = users[(initiator + i + 1) % 2]
-                rows.append([sender, recipient, m, timestamp])
-                timestamp += random.randint(1, 10 * 60)
-                added_messages += 1
-                if added_messages > num_messages:
-                    break
+        for i, m in enumerate(conversations[conversation_index][:-1].split(" \\")):
+            sender = users[(initiator + i) % 2]
+            recipient = users[(initiator + i + 1) % 2]
+            rows.append([sender, recipient, m, timestamp])
+            timestamp += random.randint(1, 10 * 60)
+            added_messages += 1
+        groups_to_messages[g] = max(groups_to_messages[g]-added_messages, 0)
+        conversation_index += 1
+        timestamp += random.randint(1, 2 * 60 * 60)
 
     with output_path.open("w") as f:
         writer = csv.writer(f)
