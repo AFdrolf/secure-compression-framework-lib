@@ -1,63 +1,24 @@
-import json
-from urllib.parse import urljoin
+from pathlib import Path
 
-import requests
+from openai import OpenAI
 
-
-def complete_prompt(api_base_url, proxy_url, prompt, n_predict=4096):
-    """
-    Completes a given prompt using the LLaMA.cpp HTTP Server API.
-
-    Args:
-    - api_base_url (str): The base URL of the API (e.g., http://api.serg.com)
-    - proxy_url (str): The URL of the SOCKS5 proxy (e.g., socks5h://localhost:9050)
-    - prompt (str): The prompt to be completed
-    - n_predict (int, optional): The number of tokens to predict. Defaults to 4096.
-
-    Returns:
-    - response (dict): The API response containing the completion result.
-    """
-
-    # Construct the full API endpoint URL
-    endpoint_url = urljoin(api_base_url, "completion")
-
-    # Set up the proxy
-    proxies = {"http": proxy_url, "https": proxy_url}
-
-    # Prepare the payload
-    payload = {
-        "prompt": prompt,
-        "n_predict": n_predict,
-        # Add any other options as needed (e.g., temperature, top_k, etc.)
-    }
-
-    # Make the POST request
-    try:
-        response = requests.post(endpoint_url, proxies=proxies, json=payload, timeout=600)  # 10-minute timeout
-        response.raise_for_status()  # Raise an exception for HTTP errors
-    except requests.exceptions.RequestException as err:
-        print("Request Exception:", err)
-        return None
-
-    # Return the JSON response
-    try:
-        return response.json()
-    except json.JSONDecodeError as err:
-        print("JSON Decode Error:", err)
-        return None
-
-
-# Example usage
 if __name__ == "__main__":
-    api_base_url = "http://do5n2xm36umjdo2wb63aqpimzqgvgxdg7aexlvljb2itfe3nistifkyd.onion"
-    proxy_url = "socks5h://localhost:9050"
-    prompt_string = "Hello"
-    n_tokens_to_predict = 128  # Optional, defaults to 4096 in the function
+    client = OpenAI()
 
-    result = complete_prompt(api_base_url, proxy_url, prompt_string, n_tokens_to_predict)
-    if result:
-        print(json.dumps(result, indent=4))  # Pretty print the JSON response
-        print()
-        print("Predicted tokens count:", result["tokens_predicted"])
-        print("Output content:")
-        print(result["content"])
+    prompt = """
+    Generate x realistic conversations of 10 messages between users of a messaging application. 
+    Each conversation should have a different subject. 
+    Use a range of formal and informal writing (where informal means including texting abbreviations and not using capitalization/punctuation) and different message lengths across conversations to simulate different relationships between users.
+    Please format the output for each conversation as message1 \message2 \... and output each conversation on a new line. Do not output anything else.
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}],
+    )
+
+    conversations_path = Path(__file__).parent.parent / "helper_data" / "conversations.txt"
+    with conversations_path.open("a") as f:
+        for conversation in response.choices[0].message.content.split("\n\n"):
+            parsed = conversation.split(" \\\n")
+            f.write("\\".join(parsed) + "\n")
