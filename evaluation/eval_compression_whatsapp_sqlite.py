@@ -101,3 +101,5 @@ if __name__ == "__main__":
                         db_path.unlink()
                         compressed_db_path.unlink()
                         safe_compressed_db_path.unlink()
+                        for db in args.output_dir.glob(f"*{n}_{m}_{dist}.db"):
+                            db.unlink()
