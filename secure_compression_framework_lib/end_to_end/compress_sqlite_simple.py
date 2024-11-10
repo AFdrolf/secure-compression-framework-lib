@@ -3,7 +3,7 @@ from typing import Callable
 
 from secure_compression_framework_lib.multi_stream.compress import MSCompressor, ZlibCompressionStream
 from secure_compression_framework_lib.partitioner.access_control import Principal
-from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteSimplePartitioner, SQLiteDataUnit
+from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit, SQLiteSimplePartitioner
 
 
 def compress_sqlite_simple(

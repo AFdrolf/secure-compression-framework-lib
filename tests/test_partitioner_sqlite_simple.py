@@ -24,7 +24,9 @@ def example_sender_partition_policy(principal: Principal):
 
 def test_partitioner_sqlite_simple(tmpdir):
     test_db_sqlite = Path(generate_test_db_sqlite(tmpdir))
-    partitioner = SQLiteSimplePartitioner(test_db_sqlite, example_extract_principal_from_sqlite, example_sender_partition_policy)
+    partitioner = SQLiteSimplePartitioner(
+        test_db_sqlite, example_extract_principal_from_sqlite, example_sender_partition_policy
+    )
     out = partitioner.partition()
     assert len(out) == 4
     pass
