@@ -37,6 +37,10 @@ class SQLiteSimplePartitioner(Partitioner):
         cur.execute("SELECT sql FROM sqlite_master WHERE type='table'")
         schema = cur.fetchall()
 
+        # Save indexes
+        cur.execute("SELECT sql FROM sqlite_master WHERE type='index'")
+        indexes = cur.fetchall()
+
         # First, iterate through all rows of all tables
         cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cur.fetchall()
@@ -73,6 +77,9 @@ class SQLiteSimplePartitioner(Partitioner):
                             and "labeled_messages_fts_stat" not in table_schema[0]
                         ):
                             db_bucket_cur.execute(table_schema[0])
+                    for index in indexes:
+                        if index[0]:
+                            db_bucket_cur.execute(index[0])
                     db_buckets[db_bucket_id] = (db_bucket_con, db_bucket_cur)
                 else:
                     db_bucket_cur = db_buckets[db_bucket_id][0]
