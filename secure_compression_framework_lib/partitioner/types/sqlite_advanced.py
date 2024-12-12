@@ -59,6 +59,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
         # Get schema information
         cur.execute("select name, rootpage FROM sqlite_master WHERE type='table'")
         page_to_table = {row[1]: row[0] for row in cur.fetchall()}
+        page_to_table[1] = "sqlite_schema"
         overflow_pages = []
 
         db_size = self._get_data().stat().st_size
@@ -91,10 +92,9 @@ class SQLiteAdvancedPartitioner(Partitioner):
                 f.seek(page_start)
                 page = f.read(page_size)
 
-                # Root page contains the database header and schema information
+                # First 100 bytes of root page are the DB header
                 if page_number == 1:
-                    bucketed_data.append((self.partition_policy(Principal(null=True)), page))
-                    continue
+                    page = page[100:]
 
                 page_type = page[0]
                 num_cells = int.from_bytes(page[3:5])
@@ -115,7 +115,11 @@ class SQLiteAdvancedPartitioner(Partitioner):
                     cell_pointer_array = page[12 : (2 * num_cells)]  # Interior btree page has 12 byte header
                     for cell_index in range(num_cells):
                         cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
-                        left_pointer = int.from_bytes(page[cell_offset : cell_offset + 4])
+                        if page_number == 1:
+                            # 100 bytes of header are not accounted for in offset
+                            left_pointer = int.from_bytes(page[cell_offset - 100: cell_offset - 100 + 4])
+                        else:
+                            left_pointer = int.from_bytes(page[cell_offset : cell_offset + 4])
                         page_to_table[left_pointer] = table_name
 
                     bucketed_data.append((self.partition_policy(Principal(null=True)), page))
@@ -123,9 +127,14 @@ class SQLiteAdvancedPartitioner(Partitioner):
 
                 # Parse table leaf to partition
                 elif page_type == PAGE_TYPES["table_leaf"]:
-                    # Page before cell content is metadata
-                    bucketed_data.append((self.partition_policy(Principal(null=True)), page[:cell_content_offset]))
                     cell_pointer_array = page[8 : 8 + (2 * num_cells)]
+                    # Page before cell content is metadata
+                    if cell_pointer_array:
+                        bucketed_data.append((self.partition_policy(Principal(null=True)), page[:cell_content_offset]))
+                    else:
+                        # Empty page
+                        bucketed_data.append((self.partition_policy(Principal(null=True)), page))
+                        continue
                     cell_offsets = [
                         int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
                         for cell_index in range(num_cells)
