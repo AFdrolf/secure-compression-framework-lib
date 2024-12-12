@@ -78,3 +78,15 @@ class XMLDataUnit:
     @property
     def element(self) -> ElementTree.Element:
         return self.context[-1]
+
+
+@dataclass
+class SQLiteDataUnit:
+    """An SQLiteDataUnit is the unit which is mapped to a Principal.
+
+    The unit we actually want to map to a Principal is a row in the database, but to do this mapping we need some context for
+    the row (i.e., what table it belongs to)
+    """
+
+    row: tuple
+    table_name: str

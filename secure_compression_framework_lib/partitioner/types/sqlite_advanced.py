@@ -4,7 +4,9 @@ import struct
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
+from secure_compression_framework_lib.partitioner.access_control import Principal
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
 HEADER_SIZE_BYTES = 100
@@ -16,8 +18,8 @@ HEADER_INFO_POSITIONS = {
     "header_string_end": 15,
     "page_size_start": 16,
     "page_size_end": 17,
-    "freelist_first_page_number_start": 32,
-    "freelist_first_page_number_start": 35,
+    "freelist_count_start": 36,
+    "freelist_count_end": 39,
 }
 HEADER_STRING = "SQLite format 3\000"
 
@@ -47,13 +49,19 @@ class SQLiteAdvancedPartitioner(Partitioner):
     def _get_data(self) -> Path:
         return self.data
 
-    def partition(self) -> list[Path]:
-        self.buckets = defaultdict(bytes)
+    def partition(self) -> list[tuple[str, bytes]]:
+        bucketed_data = []
 
         con = sqlite3.connect(self._get_data())
+        con.execute("VACUUM")  # Vacuum so we don't need to worry about free pages
         cur = con.cursor()
 
-        db_size = self._get_data.stat().st_size
+        # Get schema information
+        cur.execute("select name, rootpage FROM sqlite_master WHERE type='table'")
+        page_to_table = {row[1]: row[0] for row in cur.fetchall()}
+        overflow_pages = []
+
+        db_size = self._get_data().stat().st_size
         with open(self._get_data(), "rb") as f:
             # First, check header, and find page size
             header = f.read(HEADER_SIZE_BYTES)
@@ -64,133 +72,184 @@ class SQLiteAdvancedPartitioner(Partitioner):
                 != HEADER_STRING
             ):
                 raise ValueError("Input file is not encoded in SQLite's database file format.")
-            page_size = struct.unpack(
-                "<H", header[HEADER_INFO_POSITIONS["page_size_start"] : HEADER_INFO_POSITIONS["page_size_end"] + 1]
-            )[0]
-            free_list_first_page = header[
-                HEADER_INFO_POSITIONS["freelist_first_page_number_start"] : HEADER_INFO_POSITIONS[
-                    "freelist_first_page_number_start"
-                ]
-                + 1
-            ]
 
-            # We need to keep track of freelist and overflow pages, since there is no identifier for these
-            # TODO: maybe we do not actually care about freelist pages? Also, fix: overflow page may technically appear before the parent page
-            freelist_first_page = header[
-                HEADER_INFO_POSITIONS["freelist_first_page_number_start"] : HEADER_INFO_POSITIONS[
-                    "freelist_first_page_number_start"
-                ]
-                + 1
-            ]
-            freelist_pages = [free_list_first_page]
-            overflow_pages = []
+            page_size = int.from_bytes(
+                header[HEADER_INFO_POSITIONS["page_size_start"] : HEADER_INFO_POSITIONS["page_size_end"] + 1]
+            )
+            freelist_count = int.from_bytes(
+                header[HEADER_INFO_POSITIONS["freelist_count_start"] : HEADER_INFO_POSITIONS["freelist_count_end"] + 1]
+            )
+            reserved_bytes_per_page = int.from_bytes(header[20:21])
+            assert reserved_bytes_per_page == 0
+
+            if freelist_count != 0:
+                raise ValueError("Database still contains free pages which could leak data")
 
             # Main loop: iterate through every page, determine its type, and handle as needed
-            for page_number in range(1, db_size // page_size):
-                page_start = page_number * page_size
+            for page_number in range(1, db_size // page_size + 1):
+                page_start = (page_number - 1) * page_size
                 f.seek(page_start)
                 page = f.read(page_size)
+
+                # Root page contains the database header and schema information
+                if page_number == 1:
+                    bucketed_data.append((self.partition_policy(Principal(null=True)), page))
+                    continue
+
                 page_type = page[0]
+                num_cells = int.from_bytes(page[3:5])
+                cell_content_offset = int.from_bytes(page[5:7])
 
-                if page_number in overflow_pages:
-                    pass
-                # Root page, containing the database header and schema information
-                elif page_number == 1:
-                    self.buckets["metadata"] += page
-                # Locking page, which always contains all zeroes
-                elif page_number == 2**30:
-                    self.buckets["metadata"] += page
-                # Either table interior, index interior, or index b-tree leaf page. These do not contain cell data
-                elif page_type in PAGE_TYPES.values() and page_type != PAGE_TYPES["table_leaf"]:
-                    self.buckets["metadata"] += page
-                # Table b-tree leaf page
+                # Index pages considered metadata
+                if page_type == PAGE_TYPES["index_leaf"] or page_type == PAGE_TYPES["index_interior"]:
+                    bucketed_data.append((self.partition_policy(Principal(null=True)), page))
+                    continue
+
+                # Get name if table page
+                table_name = page_to_table[page_number]
+
+                # Parse table interior to add to page_to_table_mapping
+                if page_type == PAGE_TYPES["table_interior"]:
+                    rightmost_pointer = int.from_bytes(page[8:12])
+                    page_to_table[rightmost_pointer] = table_name
+                    cell_pointer_array = page[12 : (2 * num_cells)]  # Interior btree page has 12 byte header
+                    for cell_index in range(num_cells):
+                        cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
+                        left_pointer = int.from_bytes(page[cell_offset : cell_offset + 4])
+                        page_to_table[left_pointer] = table_name
+
+                    bucketed_data.append((self.partition_policy(Principal(null=True)), page))
+                    continue
+
+                # Parse table leaf to partition
                 elif page_type == PAGE_TYPES["table_leaf"]:
-                    # TODO: find table name.
-                    # We can do this heuristically by comparing sqlite_schema.sql against the payload of the row
-                    # Or, do it _very_ slowly by iterating through all tables and seeing if the row is in the table
-                    cell_rowid, record_data = self._parse_btree_leaf(page)
+                    # Page before cell content is metadata
+                    bucketed_data.append((self.partition_policy(Principal(null=True)), page[:cell_content_offset]))
+                    cell_pointer_array = page[8 : 8 + (2 * num_cells)]
+                    cell_offsets = [
+                        int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
+                        for cell_index in range(num_cells)
+                    ]
+                    cell_offsets.sort()
+                    assert cell_offsets[0] == cell_content_offset
+                    for cell_offset in cell_offsets:
+                        # First in cell is a varint encoding payload size
+                        cell_payload_size, cell_payload_size_bu = _varint_to_integer(
+                            page[cell_offset : cell_offset + 9]
+                        )
+                        payload_on_page = _payload_on_page(page_size, cell_payload_size)
 
-                    # For now, read the contents of the database by making a read-call to it. We can also parse this directly from record_data. TODO: check overflow page, if needed
-                    table_name = self._find_table_name(cur, cell_rowid, record_data)
-                    cur.execute("SELECT * FROM {table_name} WHERE rowid = ?", (cell_rowid,))
-                    row = cur.fetchone()
-                    data_unit = SQLiteDataUnit(row, table_name)
-                    principal = self.access_control_policy(data_unit)
-                    if principal == None:
-                        continue
-                    db_bucket_id = self.partition_policy(principal)
-                    self.buckets[db_bucket_id] += record_data
+                        # Next is a varint encoding rowid
+                        rowid_offset = cell_offset + cell_payload_size_bu
+                        cell_rowid, cell_rowid_bu = _varint_to_integer(page[rowid_offset : rowid_offset + 9])
 
-    def _parse_table_btree_leaf(self, page: bytes):
-        # TODO: make these magic number global constants, similar to the ones for the database header
-        # TODO: feed all data that is not part of the record data to metadata stream
-        number_of_cells = page[3:5]
-        cell_content_area_start = page[5:7]
-        cell_pointer_array = page[8 : 2 * number_of_cells]
+                        cell_payload_offset = cell_payload_size_bu + cell_rowid_bu
 
-        for cell_number in number_of_cells - 3:
-            cell_start = cell_pointer_array[cell_number * 2 : cell_number * 2 + 2]
+                        if payload_on_page < cell_payload_size:
+                            # TODO: Handle overflow pages
+                            raise ValueError("Overflow pages currently unsupported")
+                        else:
+                            cell_data = page[cell_offset : cell_offset + cell_payload_offset + payload_on_page]
+                            payload = cell_data[cell_payload_offset : cell_payload_offset + payload_on_page]
 
-            # First, find size of cell payload, encoded as a varint at the start of the cell (TODO: cite documentation on varint encoding here)
-            cell_payload_size_varint = page[cell_start : cell_start + 18]
-            cell_payload_size, bytes_used_varint_1 = self._varint_to_integer(cell_payload_size_varint)
+                        # Now we have the cell decode the payload to find the row data
+                        payload_header_size, payload_header_size_bu = _varint_to_integer(payload[:9])
+                        payload_header_offset = payload_header_size_bu
+                        column_types = []
+                        while payload_header_offset < payload_header_size:
+                            column_serial_type, column_serial_type_bu = _varint_to_integer(
+                                payload[payload_header_offset : payload_header_offset + 9]
+                            )
+                            column_types.append(column_serial_type)
+                            payload_header_offset += column_serial_type_bu
 
-            # Then, find the rowid of this cell, also encoded as a varint
-            cell_rowid_varint = page[cell_start + bytes_used_varint_1 : cell_start + 18]
-            cell_rowid, bytes_used_varint_2 = self._varint_to_integer(cell_rowid_varint)
+                        record_data = payload[payload_header_size:]
+                        record_offset = 0
+                        row = []
+                        for col in column_types:
+                            if col == 0:
+                                col_data = None
+                            elif col == 8:
+                                col_data = 0
+                            elif col == 9:
+                                col_data = 1
+                            else:
+                                col_data_size, col_data_type = _get_content_size_type(col)
+                                col_data = record_data[record_offset : record_offset + col_data_size]
+                                col_data = col_data_type(col_data)
+                                record_offset += col_data_size
+                            row.append(col_data)
 
-            # We can now process the payload of the cell. The structure is a payload header followed by the record data
-            cell_payload = page[cell_start + bytes_used_varint_1 + bytes_used_varint_2 : cell_start + cell_payload_size]
-            payload_header_length_varint = cell_payload[:18]
-            payload_header_length, bytes_used_varint_3 = self._varint_to_integer(payload_header_length_varint)
-            record_data = cell_payload[payload_header_length:]
+                        data_unit = SQLiteDataUnit(tuple(row), table_name)
+                        principal = self.access_control_policy(data_unit)
+                        bucketed_data.append((self.partition_policy(principal), cell_data))
 
-            return cell_rowid, record_data
+                else:
+                    raise ValueError("Cannot identify page type")
 
-    def _find_table_name(self, cur, rowid, record_data):
-        # WIP
-        # Get the list of tables in the database
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cur.fetchall()
+        return bucketed_data
 
-        # Prepare a query template with placeholders
-        placeholders = ", ".join("?" for _ in record_data)
 
-        # Iterate through each table
-        for table in tables:
-            table_name = table[0]
+def _varint_to_integer(varint: bytes) -> tuple[int, int]:
+    """Parse a bytestring as a varint and return the varint and bytes used for the encoding"""
+    result = 0
+    shift = 0
+    bytes_used = 0
 
-            # Generate a query to check if the row exists in the current table
-            query = (
-                f"SELECT COUNT(*) FROM {table_name} WHERE rowid = ? AND ({', '.join(f'? = ?' for _ in record_data)})"
-            )
+    for b in varint:
+        result |= (b & 0x7F) << shift
+        bytes_used += 1
+        if b & 0x80 == 0:
+            break
+        shift += 7
 
-            try:
-                cur.execute(query, (record_data[0], *record_data))
-                count = cur.fetchone()[0]
+    return result, bytes_used
 
-                if count > 0:
-                    print(f"Row found in table: {table_name}")
-                    cur.close()
-                    return table_name
-            except sqlite3.Error as e:
-                # Handle exceptions if the query fails (like mismatched columns)
-                continue
 
-        print("Row not found in any table.")
-        cur.close()
-        return None
+def _payload_on_page(u: int, p: int):
+    """
+    Calculate the size of the payload stored on a table btree leaf page (as opposed to on an overflow page).
+    The logic is directly copied from sqlite documentation.
+    """
+    x = u - 35
+    m = ((u - 12) * 32 // 255) - 23
 
-    def _varint_to_integer(self, varint):
-        result = 0
-        shift = 0
-        bytes_used = 0
+    if p <= x:
+        return p
 
-        for b in varint:
-            result |= (b & 0x7F) << shift
-            bytes_used += 1
-            if b & 0x80 == 0:
-                break
-            shift += 7
+    k = m + ((p - m) % (u - 4))
 
-        return result, bytes_used
+    if k <= x:
+        return k
+    else:
+        return m
+
+
+def _get_content_size_type(serial_type: int) -> tuple[int, Callable]:
+    """Convert a serial type to a content size and a function used to parse content to a Python data type"""
+    if serial_type == 0:
+        return 0, int.from_bytes  # Value is a NULL.
+    elif serial_type == 1:
+        return 1, int.from_bytes  # Value is an 8-bit twos-complement integer.
+    elif serial_type == 2:
+        return 2, int.from_bytes  # Value is a big-endian 16-bit twos-complement integer.
+    elif serial_type == 3:
+        return 3, int.from_bytes  # Value is a big-endian 24-bit twos-complement integer.
+    elif serial_type == 4:
+        return 4, int.from_bytes  # Value is a big-endian 32-bit twos-complement integer.
+    elif serial_type == 5:
+        return 6, int.from_bytes  # Value is a big-endian 48-bit twos-complement integer.
+    elif serial_type == 6:
+        return 8, int.from_bytes  # Value is a big-endian 64-bit twos-complement integer.
+    elif serial_type == 7:
+        return 8, int.from_bytes  # Value is a big-endian IEEE 754-2008 64-bit floating point number.
+    elif serial_type == 8:
+        return 0, int.from_bytes  # Value is the integer 0. (Only available for schema format 4 and higher.)
+    elif serial_type == 9:
+        return 0, int.from_bytes  # Value is the integer 1. (Only available for schema format 4 and higher.)
+    elif serial_type >= 12 and serial_type % 2 == 0:
+        return (serial_type - 12) // 2, bytes  # Value is a BLOB that is {(serial_type - 12) // 2} bytes in length.
+    elif serial_type >= 13 and serial_type % 2 == 1:
+        return (serial_type - 13) // 2, lambda x: x.decode(
+            "utf-8"
+        )  # Value is a string in the text encoding and {(serial_type - 13) // 2} bytes in length.

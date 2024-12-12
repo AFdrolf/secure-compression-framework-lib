@@ -1,24 +1,11 @@
 import sqlite3
-from dataclasses import dataclass
 from pathlib import Path
 
+from secure_compression_framework_lib.partitioner.access_control import SQLiteDataUnit
 from secure_compression_framework_lib.partitioner.partitioner import Partitioner
 
+
 # TODO: we may need to make this code more efficient to deal with large databases.
-
-
-@dataclass
-class SQLiteDataUnit:
-    """An SQLiteDataUnit is the unit which is mapped to a Principal.
-
-    The unit we actually want to map to a Principal is a row in the database, but to do this mapping we need some context for
-    the row (i.e., what table it belongs to)
-    """
-
-    row: tuple
-    table_name: str
-
-
 class SQLiteSimplePartitioner(Partitioner):
     """Implements partitioner where the data is a Path object for the SQLite database file to be partitioned."""
 
@@ -50,11 +37,12 @@ class SQLiteSimplePartitioner(Partitioner):
             for row in cur:
                 data_unit = SQLiteDataUnit(row, table_name)
                 principal = self.access_control_policy(data_unit)
-                if principal == None:
+                if principal is None:
                     continue
                 db_bucket_id = self.partition_policy(principal)
 
                 # Create empty SQLite file if it does not exist yet
+                # TODO this needs to be agnostic to specific whatsapp tables
                 if db_bucket_id not in db_buckets:
                     db_bucket_path = self._get_data().parent / (str(db_bucket_id) + "_" + self._get_data().name)
                     db_bucket_paths.append(db_bucket_path)
