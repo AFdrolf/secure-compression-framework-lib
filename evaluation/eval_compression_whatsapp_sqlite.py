@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit
+from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 
 sys.path.append(sys.path[0] + "/..")
 
@@ -12,8 +13,8 @@ from evaluation.data_generation.messaging import generate_messaging_csv
 from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
-from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy
-
+from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy, \
+    generate_attribute_based_partition_policy
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -66,17 +67,7 @@ if __name__ == "__main__":
                     compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz"
                     compress_file(db_path, compressed_db_path)
 
-                    def access_control_policy(sqlite_du: SQLiteDataUnit):
-                        if sqlite_du.table_name == "message":
-                            principal_gid = sqlite_du.row[1]
-                            return Principal(gid=principal_gid)
-                        else:
-                            return Principal(gid="metadata")
-
-                    def partition_policy(principal: Principal):
-                        return str(principal.gid)
-
-                    compressed_db_buckets = compress_sqlite_simple(db_path, access_control_policy, partition_policy)
+                    compressed_db_buckets = compress_sqlite_simple(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
                     safe_compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe"
                     safe_compressed_db_path.write_bytes(compressed_db_buckets)
 

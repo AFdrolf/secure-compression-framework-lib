@@ -59,9 +59,9 @@ def basic_partition_policy(p: Principal) -> str:
     return str(p)
 
 
-def attribute_based_partition_policy(p: Principal, attr: str) -> str:
+def generate_attribute_based_partition_policy(attr: str) -> Callable[[Principal], str]:
     """Partitions based on a given attribute of the principal e.g. is_contact."""
-    return str(p.__getattribute__(attr))
+    return lambda p: str(p.__getattribute__(attr)) if not p.null else str(p)
 
 
 @dataclass

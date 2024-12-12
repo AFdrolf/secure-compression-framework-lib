@@ -4,12 +4,12 @@ import sqlite3
 
 
 def create_messages_db(db_name):
-    """Create an SQLite database with a messages table."""
+    """Create an SQLite database with a message table."""
     conn = sqlite3.connect(db_name)
     cursor = conn.cursor()
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS messages (
+        CREATE TABLE IF NOT EXISTS message (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             gid INTEGER,
             from_me INTEGER,
@@ -27,7 +27,7 @@ def insert_message(db_name, gid, from_me, content):
 
     cursor.execute(
         """
-        INSERT INTO messages (gid, from_me, content)
+        INSERT INTO message (gid, from_me, content)
         VALUES (?, ?, ?)
     """,
         (gid, from_me, content),
