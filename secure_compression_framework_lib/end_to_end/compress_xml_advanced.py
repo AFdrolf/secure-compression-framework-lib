@@ -26,7 +26,7 @@ def compress_xml_advanced_by_element(
 
     Returns:
     -------
-        A tuple of a bytes object containing the compressed XML and a stream switch list for reconstruction
+        Bytes of the safely compressed XML
 
     """
     partitioner = XmlAdvancedPartitioner(xml_file, access_control_policy, basic_partition_policy)
