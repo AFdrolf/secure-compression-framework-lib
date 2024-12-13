@@ -60,7 +60,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
         cur.execute("select name, rootpage FROM sqlite_master WHERE type='table'")
         page_to_table = {row[1]: row[0] for row in cur.fetchall()}
         page_to_table[1] = "sqlite_schema"
-        overflow_pages = []
+        overflow_to_partition = {}
 
         db_size = self._get_data().stat().st_size
         with open(self._get_data(), "rb") as f:
@@ -92,8 +92,12 @@ class SQLiteAdvancedPartitioner(Partitioner):
                 f.seek(page_start)
                 page = f.read(page_size)
 
+                if page_number in overflow_to_partition:
+                    bucketed_data.append((overflow_to_partition[page_number], page))
+
                 # First 100 bytes of root page are the DB header
                 if page_number == 1:
+                    bucketed_data.append((self.partition_policy(Principal(null=True)), page[:100]))
                     page = page[100:]
 
                 page_type = page[0]
@@ -112,12 +116,12 @@ class SQLiteAdvancedPartitioner(Partitioner):
                 if page_type == PAGE_TYPES["table_interior"]:
                     rightmost_pointer = int.from_bytes(page[8:12])
                     page_to_table[rightmost_pointer] = table_name
-                    cell_pointer_array = page[12 : (2 * num_cells)]  # Interior btree page has 12 byte header
+                    cell_pointer_array = page[12 : 12 + (2 * num_cells)]  # Interior btree page has 12 byte header
                     for cell_index in range(num_cells):
                         cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
                         if page_number == 1:
                             # 100 bytes of header are not accounted for in offset
-                            left_pointer = int.from_bytes(page[cell_offset - 100: cell_offset - 100 + 4])
+                            left_pointer = int.from_bytes(page[cell_offset - 100 : cell_offset - 100 + 4])
                         else:
                             left_pointer = int.from_bytes(page[cell_offset : cell_offset + 4])
                         page_to_table[left_pointer] = table_name
@@ -130,7 +134,14 @@ class SQLiteAdvancedPartitioner(Partitioner):
                     cell_pointer_array = page[8 : 8 + (2 * num_cells)]
                     # Page before cell content is metadata
                     if cell_pointer_array:
-                        bucketed_data.append((self.partition_policy(Principal(null=True)), page[:cell_content_offset]))
+                        if page_number == 1:
+                            bucketed_data.append(
+                                (self.partition_policy(Principal(null=True)), page[: cell_content_offset - 100])
+                            )
+                        else:
+                            bucketed_data.append(
+                                (self.partition_policy(Principal(null=True)), page[:cell_content_offset])
+                            )
                     else:
                         # Empty page
                         bucketed_data.append((self.partition_policy(Principal(null=True)), page))
@@ -141,7 +152,10 @@ class SQLiteAdvancedPartitioner(Partitioner):
                     ]
                     cell_offsets.sort()
                     assert cell_offsets[0] == cell_content_offset
-                    for cell_offset in cell_offsets:
+                    if page_number == 1:
+                        # 100 bytes of header are not accounted for in offset
+                        cell_offsets = [x - 100 for x in cell_offsets]
+                    for cell_index, cell_offset in enumerate(cell_offsets):
                         # First in cell is a varint encoding payload size
                         cell_payload_size, cell_payload_size_bu = _varint_to_integer(
                             page[cell_offset : cell_offset + 9]
@@ -154,12 +168,35 @@ class SQLiteAdvancedPartitioner(Partitioner):
 
                         cell_payload_offset = cell_payload_size_bu + cell_rowid_bu
 
-                        if payload_on_page < cell_payload_size:
-                            # TODO: Handle overflow pages
-                            raise ValueError("Overflow pages currently unsupported")
+                        # Need to capture unused bytes after cell payload before next cell
+                        if cell_offset == cell_offsets[-1]:
+                            cell_data = page[cell_offset:]
                         else:
-                            cell_data = page[cell_offset : cell_offset + cell_payload_offset + payload_on_page]
+                            cell_data = page[cell_offset : cell_offsets[cell_index + 1]]
+                        payload = cell_data[cell_payload_offset : cell_payload_offset + payload_on_page]
+
+                        overflow_pointers = []
+                        if payload_on_page < cell_payload_size:
+                            # For overflow pages we can record the partition and look it up when we reach that page
+                            # since the overflow will be part of the same data unit as the original cell
+                            overflow_pointer_offset = cell_offset + cell_payload_offset + payload_on_page
+                            overflow_pointer = int.from_bytes(
+                                page[overflow_pointer_offset : overflow_pointer_offset + 4]
+                            )
                             payload = cell_data[cell_payload_offset : cell_payload_offset + payload_on_page]
+                            payload_to_read = cell_payload_size - payload_on_page
+                            while overflow_pointer != 0:
+                                # overflow pages are a linked list with last page starting with 4-byte int 0
+                                overflow_pointers.append(overflow_pointer)
+                                overflow_start = (overflow_pointer - 1) * page_size
+                                f.seek(overflow_start)
+                                overflow_page = f.read(page_size)
+                                overflow_pointer = int.from_bytes(overflow_page[:4])
+                                if overflow_pointer == 0:
+                                    payload += overflow_page[4 : 4 + overflow_pointer + payload_to_read]
+                                else:
+                                    payload += overflow_page[4:]
+                                    payload_to_read -= page_size - 4
 
                         # Now we have the cell decode the payload to find the row data
                         payload_header_size, payload_header_size_bu = _varint_to_integer(payload[:9])
@@ -191,8 +228,11 @@ class SQLiteAdvancedPartitioner(Partitioner):
 
                         data_unit = SQLiteDataUnit(tuple(row), table_name)
                         principal = self.access_control_policy(data_unit)
-                        bucketed_data.append((self.partition_policy(principal), cell_data))
-
+                        partition = self.partition_policy(principal)
+                        bucketed_data.append((partition, cell_data))
+                        for op in overflow_pointers:
+                            # Map overflow pages if any to same partition so we can bucket them when we reach them
+                            overflow_to_partition[op] = partition
                 else:
                     raise ValueError("Cannot identify page type")
 
@@ -200,19 +240,21 @@ class SQLiteAdvancedPartitioner(Partitioner):
 
 
 def _varint_to_integer(varint: bytes) -> tuple[int, int]:
-    """Parse a bytestring as a varint and return the varint and bytes used for the encoding"""
-    result = 0
-    shift = 0
-    bytes_used = 0
+    """Parse a bytestring as a big endian varint and return the varint and bytes used for the encoding"""
+    value = 0
+    num_bytes = 0
 
-    for b in varint:
-        result |= (b & 0x7F) << shift
-        bytes_used += 1
-        if b & 0x80 == 0:
+    # Count the number of bytes used for the varint
+    for byte in varint:
+        num_bytes += 1
+        if (byte & 0x80) == 0:
             break
-        shift += 7
 
-    return result, bytes_used
+    # Decode the varint as big-endian
+    for i in range(num_bytes):
+        value = (value << 7) | (varint[i] & 0x7F)
+
+    return value, num_bytes
 
 
 def _payload_on_page(u: int, p: int):
@@ -262,3 +304,5 @@ def _get_content_size_type(serial_type: int) -> tuple[int, Callable]:
         return (serial_type - 13) // 2, lambda x: x.decode(
             "utf-8"
         )  # Value is a string in the text encoding and {(serial_type - 13) // 2} bytes in length.
+    else:
+        pass

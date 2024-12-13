@@ -12,7 +12,9 @@ from secure_compression_framework_lib.partitioner.types.sqlite_advanced import S
 
 
 def compress_sqlite_advanced(
-    db_path: Path, access_control_policy: Callable[[SQLiteDataUnit], Principal], partition_policy: Callable[[Principal], str]
+    db_path: Path,
+    access_control_policy: Callable[[SQLiteDataUnit], Principal],
+    partition_policy: Callable[[Principal], str],
 ) -> bytes:
     """Implements end to end safe compression for SQLite
 
