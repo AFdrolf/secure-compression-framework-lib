@@ -4,6 +4,7 @@ from pathlib import Path
 
 import sys
 
+from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced
 from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit
 from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 
@@ -68,12 +69,12 @@ if __name__ == "__main__":
                     compress_file(db_path, compressed_db_path)
 
                     compressed_db_buckets = compress_sqlite_simple(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
-                    safe_compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe"
+                    safe_compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe.simple"
                     safe_compressed_db_path.write_bytes(compressed_db_buckets)
 
-                    # Lastly, compare and report on the difference in size
-                    compressed_db_size = compressed_db_path.stat().st_size
-                    compressed_db_buckets_total_size = len(compressed_db_buckets)
+                    advanced_comprgiessed_bytes = compress_sqlite_advanced(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
+                    advanced_safe_compressed_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe.advanced"
+                    advanced_safe_compressed_path.write_bytes(advanced_compressed_bytes)
 
                     writer.writerow(
                         [
@@ -83,7 +84,7 @@ if __name__ == "__main__":
                             db_path.stat().st_size,
                             compressed_db_path.stat().st_size,
                             safe_compressed_db_path.stat().st_size,
-                            -1  # Advanced partitioner not implemented
+                            advanced_safe_compressed_path.stat().st_size,
                         ]
                     )
                     print(f"Finished {n} {m} {dist}")
@@ -92,5 +93,6 @@ if __name__ == "__main__":
                         db_path.unlink()
                         compressed_db_path.unlink()
                         safe_compressed_db_path.unlink()
+                        advanced_safe_compressed_path.unlink()
                         for db in args.output_dir.glob(f"*{n}_{m}_{dist}.db"):
                             db.unlink()
