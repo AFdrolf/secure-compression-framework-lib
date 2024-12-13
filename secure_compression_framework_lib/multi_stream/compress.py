@@ -252,32 +252,30 @@ class MSDecompressor:
         """
         iterator = iter(range(0, len(compressed_data)))
         stream_key_iter = 0
+        prev_od_pos = -1
+        od_pos = -1
         to_decompress = b""
         decoded_stream_switch = False
-        for i in iterator:
-            compressed_chunk = compressed_data[i : i + len(self.output_delimiter)]
-            if compressed_chunk != self.output_delimiter:
-                to_decompress += compressed_chunk[0:1]
+        while -1 != (od_pos := compressed_data.find(self.output_delimiter, od_pos + 1)):
+            to_decompress += compressed_data[prev_od_pos+len(self.output_delimiter):od_pos]
+            if not decoded_stream_switch:
+                # Data before first output delimiter should be stream switch
+                try:
+                    stream_switch = json.loads(to_decompress.decode("utf-8"))
+                except json.decoder.JSONDecodeError:
+                    raise ValueError("Expected JSON encoding of stream_switch list")
+                self.stream_switch = stream_switch
+                for stream_key in stream_switch:
+                    if stream_key not in self.decompression_streams:
+                        self.decompression_streams[stream_key] = self.stream_type()
+                decoded_stream_switch = True
             else:
-                if not decoded_stream_switch:
-                    # Data before first output delimiter should be stream switch
-                    try:
-                        stream_switch = json.loads(to_decompress.decode("utf-8"))
-                    except json.decoder.JSONDecodeError:
-                        raise ValueError("Expected JSON encoding of stream_switch list")
-                    self.stream_switch = stream_switch
-                    for stream_key in stream_switch:
-                        if stream_key not in self.decompression_streams:
-                            self.decompression_streams[stream_key] = self.stream_type()
-                    decoded_stream_switch = True
-                else:
-                    self.decompression_streams[list(self.decompression_streams.keys())[stream_key_iter]].decompress(
-                        self.decode_add_output_delimiter(to_decompress)
-                    )
-                    stream_key_iter += 1
-                to_decompress = b""
-                for _ in range(len(self.output_delimiter) - 1):
-                    next(iterator, None)
+                self.decompression_streams[list(self.decompression_streams.keys())[stream_key_iter]].decompress(
+                    self.decode_add_output_delimiter(to_decompress)
+                )
+                stream_key_iter += 1
+            to_decompress = b""
+            prev_od_pos = od_pos
 
     def finish(self) -> bytes:
         """Flush all decompression streams.
