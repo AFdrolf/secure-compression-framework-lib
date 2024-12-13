@@ -33,13 +33,27 @@ def compress_sqlite_advanced(
     """
     partitioner = SQLiteAdvancedPartitioner(db_path, access_control_policy, partition_policy)
     bucketed_data = partitioner.partition()
-    msc = MSCompressor(ZlibCompressionStream)
-    for bucket, data in bucketed_data:
+
+    # Merge adjacent buckets with same principal
+    merged_bucketed_data = []
+    current_bucket = bucketed_data[0][0]
+    current_bucket_bytes = bucketed_data[0][1]
+    for i in range(1, len(bucketed_data)):
+        if bucketed_data[i][0] == current_bucket:
+            current_bucket_bytes += bucketed_data[i][1]
+        else:
+            merged_bucketed_data.append((current_bucket, current_bucket_bytes))
+            current_bucket = bucketed_data[i][0]
+            current_bucket_bytes = bucketed_data[i][1]
+    merged_bucketed_data.append((current_bucket, current_bucket_bytes))
+
+    msc = MSCompressor(ZlibCompressionStream, stream_switch_delimiter=b"[|\\")
+    for bucket, data in merged_bucketed_data:
         msc.compress(bucket, data)
     return msc.finish()
 
 
 def decompress_sqlite_advanced(ms_compressed_data: bytes) -> bytes:
-    msd = MSDecompressor(ZlibDecompressionStream)
+    msd = MSDecompressor(ZlibDecompressionStream, stream_switch_delimiter=b"[|\\")
     msd.decompress(ms_compressed_data)
     return msd.finish()
