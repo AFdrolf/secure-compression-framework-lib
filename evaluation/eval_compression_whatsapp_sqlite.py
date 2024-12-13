@@ -5,7 +5,6 @@ from pathlib import Path
 import sys
 
 from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced
-from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit
 from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 
 sys.path.append(sys.path[0] + "/..")
@@ -14,8 +13,7 @@ from evaluation.data_generation.messaging import generate_messaging_csv
 from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file
 from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
-from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy, \
-    generate_attribute_based_partition_policy
+from secure_compression_framework_lib.partitioner.access_control import generate_attribute_based_partition_policy
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -65,16 +63,18 @@ if __name__ == "__main__":
                     generate_whatsapp_sqlite(chats_csv, db_path)
 
                     # Then, compress the database with both regular zlib and with our framework
-                    compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz"
-                    compress_file(db_path, compressed_db_path)
-
                     compressed_db_buckets = compress_sqlite_simple(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
                     safe_compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe.simple"
                     safe_compressed_db_path.write_bytes(compressed_db_buckets)
 
-                    advanced_comprgiessed_bytes = compress_sqlite_advanced(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
+                    advanced_compressed_bytes = compress_sqlite_advanced(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
                     advanced_safe_compressed_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe.advanced"
                     advanced_safe_compressed_path.write_bytes(advanced_compressed_bytes)
+
+                    # We do regular compression last because somehow the partitioner slightly changes DB size
+                    # Maybe by running queries?
+                    compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz"
+                    compress_file(db_path, compressed_db_path)
 
                     writer.writerow(
                         [
@@ -94,5 +94,5 @@ if __name__ == "__main__":
                         compressed_db_path.unlink()
                         safe_compressed_db_path.unlink()
                         advanced_safe_compressed_path.unlink()
-                        for db in args.output_dir.glob(f"*{n}_{m}_{dist}.db"):
+                        for db in args.output_dir.glob(f"*_{n}_{m}_{dist}.db"):
                             db.unlink()

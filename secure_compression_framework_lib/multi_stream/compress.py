@@ -257,7 +257,7 @@ class MSDecompressor:
         to_decompress = b""
         decoded_stream_switch = False
         while -1 != (od_pos := compressed_data.find(self.output_delimiter, od_pos + 1)):
-            to_decompress += compressed_data[prev_od_pos+len(self.output_delimiter):od_pos]
+            to_decompress += compressed_data[prev_od_pos + len(self.output_delimiter) : od_pos]
             if not decoded_stream_switch:
                 # Data before first output delimiter should be stream switch
                 try:

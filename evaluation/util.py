@@ -3,6 +3,7 @@ import random
 import zlib
 from pathlib import Path
 
+from secure_compression_framework_lib.multi_stream.compress import ZlibCompressionStream
 
 LONG_TAIL_MODEL_CONSTANTS = {
     "high_activity_chats_percentage": 0.10,  # Percentage of chats that have high activity
@@ -80,9 +81,9 @@ def allocate_messages_randomly_to_chats(chats_list, number_messages, max_message
 
 
 def compress_file(in_path: Path, out_path: Path):
-    b = in_path.read_bytes()
-    c = zlib.compress(b)
-    out_path.write_bytes(c)
+    cs = ZlibCompressionStream()
+    cs.compress(in_path.read_bytes())
+    out_path.write_bytes(cs.finish())
 
 
 def decompress_file(in_path: Path) -> bytes:

@@ -4,8 +4,10 @@ from xml.etree import ElementTree
 
 import pytest
 
-from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
-    decompress_sqlite_advanced
+from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import (
+    compress_sqlite_advanced,
+    decompress_sqlite_advanced,
+)
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
     compress_xml_advanced_by_element,
     decompress_xml_advanced_by_element,
@@ -13,8 +15,10 @@ from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
 from secure_compression_framework_lib.end_to_end.compress_xml_simple import compress_xml_simple, decompress_xml_simple
 from secure_compression_framework_lib.end_to_end.dedup_files import dedup_files_by_name
 from secure_compression_framework_lib.multi_stream.compress import ZlibCompressionStream
-from secure_compression_framework_lib.partitioner.access_control import basic_partition_policy, \
-    generate_attribute_based_partition_policy
+from secure_compression_framework_lib.partitioner.access_control import (
+    basic_partition_policy,
+    generate_attribute_based_partition_policy,
+)
 from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 from tests.test_partitioner_xml import (
     example_author_as_principal_books_xml,
@@ -121,12 +125,14 @@ def test_compress_xml_simple_basic(file, policy):
 def test_compress_sql_advanced_basic(scratch_dir):
     path = Path(__file__).parent / "example_data/whatsapp_sample.db"
 
-    partition_compressed_bytes = compress_sqlite_advanced(path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
+    partition_compressed_bytes = compress_sqlite_advanced(
+        path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid")
+    )
     partition_decompressed_bytes = decompress_sqlite_advanced(partition_compressed_bytes)
 
     cs = ZlibCompressionStream()
     cs.compress(path.read_bytes())
     regular_compressed_bytes = cs.finish()
 
-    assert len(partition_compressed_bytes) > len(regular_compressed_bytes)
+    assert len(partition_compressed_bytes) > len(regular_compressed_bytes)  # This may not be true for large DBs
     assert path.read_bytes() == partition_decompressed_bytes

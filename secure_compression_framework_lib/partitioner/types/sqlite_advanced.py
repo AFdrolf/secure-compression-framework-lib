@@ -53,7 +53,6 @@ class SQLiteAdvancedPartitioner(Partitioner):
         bucketed_data = []
 
         con = sqlite3.connect(self._get_data())
-        con.execute("VACUUM")  # Vacuum so we don't need to worry about free pages
         cur = con.cursor()
 
         # Get schema information
@@ -84,7 +83,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
             assert reserved_bytes_per_page == 0
 
             if freelist_count != 0:
-                raise ValueError("Database still contains free pages which could leak data")
+                raise ValueError("Database still contains free pages which could leak data. Please run VACUUM first.")
 
             # Main loop: iterate through every page, determine its type, and handle as needed
             for page_number in range(1, db_size // page_size + 1):
@@ -120,7 +119,7 @@ class SQLiteAdvancedPartitioner(Partitioner):
                         while children:
                             child = children.pop(0)
                             page_to_table[child] = table_name
-                            f.seek((child-1)*page_size)
+                            f.seek((child - 1) * page_size)
                             child_page = f.read(page_size)
                             if child_page[0] != PAGE_TYPES["table_interior"]:
                                 # Leaf node
@@ -241,19 +240,19 @@ class SQLiteAdvancedPartitioner(Partitioner):
         return bucketed_data
 
 
-def _parse_interior_page(page_number:int, page: bytes) -> list[int]:
+def _parse_interior_page(page_number: int, page: bytes) -> list[int]:
     """Parse a table interior page, returning a list of child pages numbers"""
     num_cells = int.from_bytes(page[3:5])
     rightmost_pointer = int.from_bytes(page[8:12])
-    cell_pointer_array = page[12: 12 + (2 * num_cells)]  # Interior btree page has 12 byte header
+    cell_pointer_array = page[12 : 12 + (2 * num_cells)]  # Interior btree page has 12 byte header
     children = [rightmost_pointer]
     for cell_index in range(num_cells):
-        cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2: cell_index * 2 + 2])
+        cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
         if page_number == 1:
             # 100 bytes of header are not accounted for in offset
-            left_pointer = int.from_bytes(page[cell_offset - 100: cell_offset - 100 + 4])
+            left_pointer = int.from_bytes(page[cell_offset - 100 : cell_offset - 100 + 4])
         else:
-            left_pointer = int.from_bytes(page[cell_offset: cell_offset + 4])
+            left_pointer = int.from_bytes(page[cell_offset : cell_offset + 4])
         children.append(left_pointer)
     return children
 
