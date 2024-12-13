@@ -59,4 +59,4 @@ def test_partitioner_sqlite_advanced_gid_col_as_principal_whatsapp_sample(tmpdir
         reconstructed_db_bytes += o[1]
     assert reconstructed_db_bytes == original_bytes
     assert out[0][1] == original_bytes[:100] and out[0][0] == np_str
-    assert "hi, I wanted to follow up on the interview from last week".encode() in out[600][1] and out[600][0] == "4"
+    assert "def! we should!".encode() in out[5000][1] and out[5000][0] == "31"

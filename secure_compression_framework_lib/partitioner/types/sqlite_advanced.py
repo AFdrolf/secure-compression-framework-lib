@@ -114,18 +114,20 @@ class SQLiteAdvancedPartitioner(Partitioner):
 
                 # Parse table interior to add to page_to_table_mapping
                 if page_type == PAGE_TYPES["table_interior"]:
-                    rightmost_pointer = int.from_bytes(page[8:12])
-                    page_to_table[rightmost_pointer] = table_name
-                    cell_pointer_array = page[12 : 12 + (2 * num_cells)]  # Interior btree page has 12 byte header
-                    for cell_index in range(num_cells):
-                        cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2 : cell_index * 2 + 2])
-                        if page_number == 1:
-                            # 100 bytes of header are not accounted for in offset
-                            left_pointer = int.from_bytes(page[cell_offset - 100 : cell_offset - 100 + 4])
-                        else:
-                            left_pointer = int.from_bytes(page[cell_offset : cell_offset + 4])
-                        page_to_table[left_pointer] = table_name
-
+                    children = _parse_interior_page(page_number, page)
+                    if children[0] not in page_to_table:
+                        # This must be a root page, traverse the tree to find all pages for mapping
+                        while children:
+                            child = children.pop(0)
+                            page_to_table[child] = table_name
+                            f.seek((child-1)*page_size)
+                            child_page = f.read(page_size)
+                            if child_page[0] != PAGE_TYPES["table_interior"]:
+                                # Leaf node
+                                continue
+                            else:
+                                # Interior node
+                                children.extend(_parse_interior_page(child, child_page))
                     bucketed_data.append((self.partition_policy(Principal(null=True)), page))
                     continue
 
@@ -237,6 +239,23 @@ class SQLiteAdvancedPartitioner(Partitioner):
                     raise ValueError("Cannot identify page type")
 
         return bucketed_data
+
+
+def _parse_interior_page(page_number:int, page: bytes) -> list[int]:
+    """Parse a table interior page, returning a list of child pages numbers"""
+    num_cells = int.from_bytes(page[3:5])
+    rightmost_pointer = int.from_bytes(page[8:12])
+    cell_pointer_array = page[12: 12 + (2 * num_cells)]  # Interior btree page has 12 byte header
+    children = [rightmost_pointer]
+    for cell_index in range(num_cells):
+        cell_offset = int.from_bytes(cell_pointer_array[cell_index * 2: cell_index * 2 + 2])
+        if page_number == 1:
+            # 100 bytes of header are not accounted for in offset
+            left_pointer = int.from_bytes(page[cell_offset - 100: cell_offset - 100 + 4])
+        else:
+            left_pointer = int.from_bytes(page[cell_offset: cell_offset + 4])
+        children.append(left_pointer)
+    return children
 
 
 def _varint_to_integer(varint: bytes) -> tuple[int, int]:
