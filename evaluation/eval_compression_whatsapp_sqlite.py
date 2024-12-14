@@ -4,7 +4,8 @@ from pathlib import Path
 
 import sys
 
-from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced
+from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
+    unsafe_compress_sqlite_advanced
 from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 
 sys.path.append(sys.path[0] + "/..")
@@ -46,6 +47,7 @@ if __name__ == "__main__":
         "compressed_bytes",
         "safe_compressed_bytes_simple",
         "safe_compressed_bytes_advanced",
+        "unsafe_compressed_bytes_advanced",
     ]
 
     with Path(args.output_dir / "whatsapp_stats.csv").open("w") as f:
@@ -71,6 +73,10 @@ if __name__ == "__main__":
                     advanced_safe_compressed_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.safe.advanced"
                     advanced_safe_compressed_path.write_bytes(advanced_compressed_bytes)
 
+                    advanced_unsafe_compressed_bytes = unsafe_compress_sqlite_advanced(db_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
+                    advanced_unsafe_compressed_path = args.output_dir / f"{n}_{m}_{dist}.db.gz.unsafe.advanced"
+                    advanced_unsafe_compressed_path.write_bytes(advanced_unsafe_compressed_bytes)
+
                     # We do regular compression last because somehow the partitioner slightly changes DB size
                     # Maybe by running queries?
                     compressed_db_path = args.output_dir / f"{n}_{m}_{dist}.db.gz"
@@ -85,6 +91,7 @@ if __name__ == "__main__":
                             compressed_db_path.stat().st_size,
                             safe_compressed_db_path.stat().st_size,
                             advanced_safe_compressed_path.stat().st_size,
+                            advanced_unsafe_compressed_path.stat().st_size,
                         ]
                     )
                     print(f"Finished {n} {m} {dist}")
@@ -94,5 +101,6 @@ if __name__ == "__main__":
                         compressed_db_path.unlink()
                         safe_compressed_db_path.unlink()
                         advanced_safe_compressed_path.unlink()
+                        advanced_unsafe_compressed_path.unlink()
                         for db in args.output_dir.glob(f"*_{n}_{m}_{dist}.db"):
                             db.unlink()

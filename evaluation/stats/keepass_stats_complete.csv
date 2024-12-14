@@ -1,4 +1,4 @@
-n,m,dist,random_password,raw_bytes,compressed_bytes,safe_compressed_bytes_simple,safe_compressed_bytes_advanced
+n,m,dist,random_password,raw_bytes,compressed_bytes,safe_compressed_bytes_simple,safe_compressed_bytes_advanced,unsafe_compressed_bytes_advanced
 2,100,even,True,307379,16222,18981,17092
 2,100,random,True,300970,16459,19072,17282
 2,100,long_tail,True,265369,15944,18394,16770
@@ -38,9 +38,9 @@ n,m,dist,random_password,raw_bytes,compressed_bytes,safe_compressed_bytes_simple
 10,100,even,True,370855,18617,26684,24045
 10,100,random,True,363884,18661,26791,24196
 10,100,long_tail,True,267158,15817,22434,20654
-10,200,even,True,733456,34645,45221,40151
+10,200,even,True,735033,34033,44680,39575,34875
 10,200,random,True,727650,34553,45108,40080
-10,200,long_tail,True,526779,30246,40075,36472
+10,200,long_tail,True,530124,29747,39953,36487,31180
 10,300,even,True,1097572,49958,63176,55943
 10,300,random,True,1081952,49506,62879,55542
 10,300,long_tail,True,790119,43652,55758,50568
