@@ -8,13 +8,15 @@ from evaluation.data_generation.messaging import generate_messaging_csv
 from evaluation.data_population.keepass import generate_keepass_xml
 from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file, decompress_file
-from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
+from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
+    decompress_sqlite_advanced
 from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
     compress_xml_advanced_by_element,
     decompress_xml_advanced_by_element,
 )
-from secure_compression_framework_lib.partitioner.access_control import Principal
-from secure_compression_framework_lib.partitioner.types.sqlite_advanced import SQLiteDataUnit
+from secure_compression_framework_lib.partitioner.access_control import Principal, \
+    generate_attribute_based_partition_policy
+from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 from tests.test_partitioner_xml import example_group_uuid_as_principal_keepass_sample_xml
 
 if __name__ == "__main__":
@@ -31,7 +33,7 @@ if __name__ == "__main__":
         generate_keepass_xml(csv_path, args.output_dir, True)
     else:
         out_path = args.output_dir / f"timing.db"
-        generate_messaging_csv(50, 200000, "even", csv_path)
+        generate_messaging_csv(100, 200000, "even", csv_path)
         generate_whatsapp_sqlite(csv_path, out_path)
 
     compress_path = args.output_dir / f"timing.gz"
@@ -52,18 +54,8 @@ if __name__ == "__main__":
             )
             partition_path.write_bytes(partition_compressed_bytes)
     else:
-        def access_control_policy(sqlite_du: SQLiteDataUnit):
-            if sqlite_du.table_name == "message":
-                principal_gid = sqlite_du.row[1]
-                return Principal(gid=principal_gid)
-            else:
-                return Principal(gid="metadata")
-
-        def partition_policy(principal: Principal):
-            return str(principal.gid)
-
         def safe_compress_func():
-            partition_compressed_bytes = compress_sqlite_simple(out_path, access_control_policy, partition_policy)
+            partition_compressed_bytes = compress_sqlite_advanced(out_path, gid_as_principal_access_control_policy, generate_attribute_based_partition_policy("gid"))
             for db in args.output_dir.glob(f"*_timing.db"):
                 db.unlink()
             partition_path.write_bytes(partition_compressed_bytes)
@@ -78,8 +70,8 @@ if __name__ == "__main__":
             decompress_xml_advanced_by_element(b)
     else:
         def safe_decompress_func():
-            # Don't currently have whatsapp simple decompression implemented
-            pass
+            b = partition_path.read_bytes()
+            decompress_sqlite_advanced(b)
 
     safe_decompress_time = timeit.timeit(
         safe_decompress_func, setup="from __main__ import safe_decompress_func", number=args.trials
@@ -88,5 +80,4 @@ if __name__ == "__main__":
     print(f"Normal compress time: {compress_time/args.trials*1000}")
     print(f"Safe compress time: {safe_compress_time/args.trials*1000}")
     print(f"Normal decompress time: {decompress_time/args.trials*1000}")
-    if args.partitioner == "keepass":
-        print(f"Safe decompress time: {safe_decompress_time/args.trials*1000}")
+    print(f"Safe decompress time: {safe_decompress_time/args.trials*1000}")
