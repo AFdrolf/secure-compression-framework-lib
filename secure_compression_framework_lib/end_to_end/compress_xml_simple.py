@@ -56,5 +56,4 @@ def decompress_xml_simple(compressed_data: list[bytes]) -> bytes:
 
     tree = _merge_etrees(decompressed_trees)
     ET.indent(tree, space="   ")
-    Path(f"/Users/sjb373/data/secure-compression-framework-lib/sjb_local/test.xml").write_bytes(ET.tostring(tree))
     return ET.tostring(tree)

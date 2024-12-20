@@ -25,10 +25,10 @@ dependencies = [
 [project.optional-dependencies]
 # up-to-date dependencies as of 2/21/24
 dev = [
-  "pytest==8.0.1",
-  "isort[colors]==5.13.2",
-  "mypy==1.8.0",
-  "ruff==0.3.4",
+  "pytest",
+  "isort[colors]",
+  "mypy",
+  "ruff"
 ]
 
 [project.urls]
