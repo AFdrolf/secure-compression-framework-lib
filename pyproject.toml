@@ -25,10 +25,13 @@ dependencies = [
 [project.optional-dependencies]
 # up-to-date dependencies as of 2/21/24
 dev = [
-  "pytest",
-  "isort[colors]",
-  "mypy",
-  "ruff"
+    "pytest",
+    "isort[colors]",
+    "mypy",
+    "ruff",
+    "pandas",
+    "matplotlib",
+    "seaborn"
 ]
 
 [project.urls]
