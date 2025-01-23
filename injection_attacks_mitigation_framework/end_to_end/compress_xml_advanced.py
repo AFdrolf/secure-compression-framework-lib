@@ -1,14 +1,18 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from secure_compression_framework_lib.multi_stream.compress import (
+from injection_attacks_mitigation_framework.multi_stream.compress import (
     MSCompressor,
     MSDecompressor,
     ZlibCompressionStream,
     ZlibDecompressionStream,
 )
-from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit, basic_partition_policy
-from secure_compression_framework_lib.partitioner.types.xml_advanced import XmlAdvancedPartitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import (
+    Principal,
+    XMLDataUnit,
+    basic_partition_policy,
+)
+from injection_attacks_mitigation_framework.partitioner.types.xml_advanced import XmlAdvancedPartitioner
 
 
 def compress_xml_advanced_by_element(

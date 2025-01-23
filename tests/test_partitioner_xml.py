@@ -1,9 +1,13 @@
 from pathlib import Path
 from xml.etree import ElementTree
 
-from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit, basic_partition_policy
-from secure_compression_framework_lib.partitioner.types.xml_advanced import XmlAdvancedPartitioner
-from secure_compression_framework_lib.partitioner.types.xml_simple import XMLSimplePartitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import (
+    Principal,
+    XMLDataUnit,
+    basic_partition_policy,
+)
+from injection_attacks_mitigation_framework.partitioner.types.xml_advanced import XmlAdvancedPartitioner
+from injection_attacks_mitigation_framework.partitioner.types.xml_simple import XMLSimplePartitioner
 
 
 def example_author_as_principal_books_xml(xml_du: XMLDataUnit) -> Principal:

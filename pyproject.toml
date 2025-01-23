@@ -3,11 +3,10 @@ requires = ["flit_core>=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "secure_compression_framework_lib"
+name = "injection_attacks_mitigation_framework"
 version = "0.0.1"
 description = "My new project."
 authors = [
-  { name = "Andres Fabrega"},
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
@@ -23,7 +22,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# up-to-date dependencies as of 2/21/24
 dev = [
     "pytest",
     "isort[colors]",

@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from secure_compression_framework_lib.multi_stream.compress import (
+from injection_attacks_mitigation_framework.multi_stream.compress import (
     MSCompressor,
     MSDecompressor,
     ZlibCompressionStream,

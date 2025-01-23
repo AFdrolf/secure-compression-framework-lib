@@ -3,13 +3,13 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Callable
 
-from secure_compression_framework_lib.multi_stream.compress import (
+from injection_attacks_mitigation_framework.multi_stream.compress import (
     MSDecompressor,
     ZlibCompressionStream,
     ZlibDecompressionStream,
 )
-from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
-from secure_compression_framework_lib.partitioner.types.xml_simple import XMLSimplePartitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal, XMLDataUnit
+from injection_attacks_mitigation_framework.partitioner.types.xml_simple import XMLSimplePartitioner
 
 
 def compress_xml_simple(

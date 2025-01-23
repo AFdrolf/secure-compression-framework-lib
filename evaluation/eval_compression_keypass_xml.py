@@ -5,10 +5,10 @@ from pathlib import Path
 from evaluation.data_generation.keepass import generate_keepass_csv
 from evaluation.data_population.keepass import generate_keepass_xml
 from evaluation.util import compress_file
-from secure_compression_framework_lib.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element, \
+from injection_attacks_mitigation_framework.end_to_end.compress_xml_advanced import compress_xml_advanced_by_element, \
     unsafe_compress_xml_advanced_by_element
-from secure_compression_framework_lib.end_to_end.compress_xml_simple import compress_xml_simple
-from secure_compression_framework_lib.partitioner.access_control import basic_partition_policy
+from injection_attacks_mitigation_framework.end_to_end.compress_xml_simple import compress_xml_simple
+from injection_attacks_mitigation_framework.partitioner.access_control import basic_partition_policy
 from tests.test_partitioner_xml import example_group_uuid_as_principal_keepass_sample_xml
 
 if __name__ == "__main__":

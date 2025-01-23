@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from secure_compression_framework_lib.multi_stream.dedup import checksum_comparison_function, dedup
+from injection_attacks_mitigation_framework.multi_stream.dedup import checksum_comparison_function, dedup
 
 
 @pytest.fixture(params=[10, 100])

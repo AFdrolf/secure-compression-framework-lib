@@ -3,7 +3,7 @@ import random
 import zlib
 from pathlib import Path
 
-from secure_compression_framework_lib.multi_stream.compress import ZlibCompressionStream
+from injection_attacks_mitigation_framework.multi_stream.compress import ZlibCompressionStream
 
 LONG_TAIL_MODEL_CONSTANTS = {
     "high_activity_chats_percentage": 0.10,  # Percentage of chats that have high activity
@@ -39,8 +39,6 @@ def generate_distribution(n: int, m: int, dist: str) -> list[int]:
 
     # Most chats have a few messages, while a few chats have many messages
     elif dist == "long_tail":
-        # TODO: some basic checks to make sure that input numbers always make sense (e.g., that there are enough
-        #  messages for low-activity chats to have at least one message)
         high_activity_chats_total = max(math.floor(n * LONG_TAIL_MODEL_CONSTANTS["high_activity_chats_percentage"]), 1)
         high_activity_messages_total = max(
             math.floor(m * LONG_TAIL_MODEL_CONSTANTS["high_activity_messages_percentage"]), 1

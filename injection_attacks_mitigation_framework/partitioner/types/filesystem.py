@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from secure_compression_framework_lib.partitioner.partitioner import Partitioner
+from injection_attacks_mitigation_framework.partitioner.partitioner import Partitioner
 
 
 class FileSystemPartitioner(Partitioner):

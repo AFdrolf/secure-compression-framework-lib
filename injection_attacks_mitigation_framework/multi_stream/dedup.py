@@ -21,10 +21,6 @@ def dedup(comparison_function: Callable, file_paths: list[Path]) -> list[Path]:
     -------
         The file paths of the remaining files after deduplication.
 
-    Todo:
-    ----
-        Generalize to chunk based dedup?
-        Verify if comparison_function(file|class_id) is faster?
 
     """
     features = {}
@@ -47,9 +43,6 @@ def checksum_comparison_function(
     ----
         hash_func: hash function that supports hashing in chunks via hash.update and hash.hexdigest.
 
-    Todo:
-    ----
-        Could make more efficient by checking size, then each chunk as it is read
 
     """
     h = hash_func()

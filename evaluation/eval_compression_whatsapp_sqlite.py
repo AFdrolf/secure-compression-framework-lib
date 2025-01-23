@@ -4,7 +4,7 @@ from pathlib import Path
 
 import sys
 
-from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
+from injection_attacks_mitigation_framework.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
     unsafe_compress_sqlite_advanced
 from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 
@@ -13,8 +13,8 @@ sys.path.append(sys.path[0] + "/..")
 from evaluation.data_generation.messaging import generate_messaging_csv
 from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file
-from secure_compression_framework_lib.end_to_end.compress_sqlite_simple import compress_sqlite_simple
-from secure_compression_framework_lib.partitioner.access_control import generate_attribute_based_partition_policy
+from injection_attacks_mitigation_framework.end_to_end.compress_sqlite_simple import compress_sqlite_simple
+from injection_attacks_mitigation_framework.partitioner.access_control import generate_attribute_based_partition_policy
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from secure_compression_framework_lib.partitioner.access_control import Principal
-from secure_compression_framework_lib.partitioner.partitioner import Partitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal
+from injection_attacks_mitigation_framework.partitioner.partitioner import Partitioner
 
 HEADER_SIZE_BYTES = 100
 PAGE_SIZE_INFO_START_BYTE = 16

@@ -56,9 +56,3 @@ def generate_messaging_csv(n: int, m: int, dist: str, output_path: Path):
     with output_path.open("w") as f:
         writer = csv.writer(f)
         writer.writerows(rows)
-
-
-if __name__ == "__main__":
-    generate_messaging_csv(
-        2, 10, "even", Path("/Users/sjb373/data/secure-compression-framework-lib/sjb_local/messages.csv")
-    )

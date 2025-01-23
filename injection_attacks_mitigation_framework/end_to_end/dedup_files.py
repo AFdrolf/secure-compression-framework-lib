@@ -1,9 +1,9 @@
 import itertools
 from pathlib import Path
 
-from secure_compression_framework_lib.multi_stream.dedup import checksum_comparison_function, dedup
-from secure_compression_framework_lib.partitioner.access_control import Principal, basic_partition_policy
-from secure_compression_framework_lib.partitioner.types.filesystem import FileSystemPartitioner
+from injection_attacks_mitigation_framework.multi_stream.dedup import checksum_comparison_function, dedup
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal, basic_partition_policy
+from injection_attacks_mitigation_framework.partitioner.types.filesystem import FileSystemPartitioner
 
 
 def example_extract_principal_from_filename(file: Path) -> Principal:
@@ -36,9 +36,3 @@ def dedup_files_by_name(files_dir: Path) -> list[Path]:
         bucket_dedup_files = dedup(checksum_comparison_function, [f[1] for f in file_tuples])
         dedup_files.extend(bucket_dedup_files)
     return dedup_files
-
-
-def dedup_files(files_dir: Path, access_control_policy, partition_policy):
-    partitioner = FileSystemPartitioner(files_dir, access_control_policy, partition_policy)
-    file_buckets = partitioner.partition()
-    # TODO: finish this function

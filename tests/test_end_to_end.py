@@ -4,18 +4,21 @@ from xml.etree import ElementTree
 
 import pytest
 
-from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import (
+from injection_attacks_mitigation_framework.end_to_end.compress_sqlite_advanced import (
     compress_sqlite_advanced,
     decompress_sqlite_advanced,
 )
-from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
+from injection_attacks_mitigation_framework.end_to_end.compress_xml_advanced import (
     compress_xml_advanced_by_element,
     decompress_xml_advanced_by_element,
 )
-from secure_compression_framework_lib.end_to_end.compress_xml_simple import compress_xml_simple, decompress_xml_simple
-from secure_compression_framework_lib.end_to_end.dedup_files import dedup_files_by_name
-from secure_compression_framework_lib.multi_stream.compress import ZlibCompressionStream
-from secure_compression_framework_lib.partitioner.access_control import (
+from injection_attacks_mitigation_framework.end_to_end.compress_xml_simple import (
+    compress_xml_simple,
+    decompress_xml_simple,
+)
+from injection_attacks_mitigation_framework.end_to_end.dedup_files import dedup_files_by_name
+from injection_attacks_mitigation_framework.multi_stream.compress import ZlibCompressionStream
+from injection_attacks_mitigation_framework.partitioner.access_control import (
     basic_partition_policy,
     generate_attribute_based_partition_policy,
 )
@@ -52,9 +55,6 @@ def test_dedup_files_by_name_basic(scratch_dir):
     assert ("bob_attachment_1_d" in deduped_filenames) ^ ("bob_attachment_3_d" in deduped_filenames)
     assert "alice_attachment_1" in deduped_filenames
     assert "alice_attachment_2_d" in deduped_filenames
-
-
-# TODO (andres): end-to-end tests for sqlite, xml simple.
 
 
 def trees_equivalent(tree1, tree2):

@@ -2,7 +2,7 @@
 
 # Define global variables and functions to source in other scripts.
 
-PROJECT_NAME="secure_compression_framework_lib"
+PROJECT_NAME="injection_attacks_mitigation_framework"
 ROOT_DIR="$(dirname "$0")/.."
 SRC_DIR="${ROOT_DIR}/${PROJECT_NAME}"
 TESTS_DIR="${ROOT_DIR}/tests"

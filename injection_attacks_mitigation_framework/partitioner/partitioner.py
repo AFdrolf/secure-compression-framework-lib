@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from secure_compression_framework_lib.partitioner.access_control import Principal
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal
 
 
 class Partitioner:

@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import Callable
 
-from secure_compression_framework_lib.multi_stream.compress import MSCompressor, ZlibCompressionStream
-from secure_compression_framework_lib.partitioner.access_control import Principal
-from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit, SQLiteSimplePartitioner
+from injection_attacks_mitigation_framework.multi_stream.compress import MSCompressor, ZlibCompressionStream
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal
+from injection_attacks_mitigation_framework.partitioner.types.sqlite_simple import (
+    SQLiteDataUnit,
+    SQLiteSimplePartitioner,
+)
 
 
 def compress_sqlite_simple(

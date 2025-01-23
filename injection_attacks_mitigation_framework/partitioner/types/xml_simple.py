@@ -3,12 +3,10 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
-from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal, XMLDataUnit
 
 sys.path.append(sys.path[0] + "/../../..")
-from secure_compression_framework_lib.partitioner.partitioner import Partitioner
-
-# TODO: we may need to make this code more efficient to deal with large databases.
+from injection_attacks_mitigation_framework.partitioner.partitioner import Partitioner
 
 
 class XMLSimplePartitioner(Partitioner):

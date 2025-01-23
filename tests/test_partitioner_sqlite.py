@@ -1,11 +1,14 @@
 from pathlib import Path
 
-from secure_compression_framework_lib.partitioner.access_control import (
+from injection_attacks_mitigation_framework.partitioner.access_control import (
     Principal,
     generate_attribute_based_partition_policy,
 )
-from secure_compression_framework_lib.partitioner.types.sqlite_advanced import SQLiteAdvancedPartitioner
-from secure_compression_framework_lib.partitioner.types.sqlite_simple import SQLiteDataUnit, SQLiteSimplePartitioner
+from injection_attacks_mitigation_framework.partitioner.types.sqlite_advanced import SQLiteAdvancedPartitioner
+from injection_attacks_mitigation_framework.partitioner.types.sqlite_simple import (
+    SQLiteDataUnit,
+    SQLiteSimplePartitioner,
+)
 from tests.example_data.generate_test_db_sqlite import generate_test_db_sqlite
 
 

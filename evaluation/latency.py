@@ -8,13 +8,13 @@ from evaluation.data_generation.messaging import generate_messaging_csv
 from evaluation.data_population.keepass import generate_keepass_xml
 from evaluation.data_population.whatsapp import generate_whatsapp_sqlite
 from evaluation.util import compress_file, decompress_file
-from secure_compression_framework_lib.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
+from injection_attacks_mitigation_framework.end_to_end.compress_sqlite_advanced import compress_sqlite_advanced, \
     decompress_sqlite_advanced
-from secure_compression_framework_lib.end_to_end.compress_xml_advanced import (
+from injection_attacks_mitigation_framework.end_to_end.compress_xml_advanced import (
     compress_xml_advanced_by_element,
     decompress_xml_advanced_by_element,
 )
-from secure_compression_framework_lib.partitioner.access_control import Principal, \
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal, \
     generate_attribute_based_partition_policy
 from tests.test_partitioner_sqlite import gid_as_principal_access_control_policy
 from tests.test_partitioner_xml import example_group_uuid_as_principal_keepass_sample_xml

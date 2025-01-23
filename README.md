@@ -1,1 +1,1 @@
-# secure-compression-framework-lib
+# injection-attacks-mitigation-framework

@@ -123,11 +123,6 @@ class MSCompressor:
         a '|' in the data ends up next to the delimiter we cannot determine where the true delimiter is
         output_delimiter: A byte sequence used to separate each compression stream in the output
 
-    Todo:
-    ----
-        Add support for different compression levels in each stream.
-        Add support for multithreading.
-        Add support for writing data to file as it is compressed.
 
     """
 
@@ -155,9 +150,6 @@ class MSCompressor:
             stream_key: Label for which compression stream to be used
             data: Data to be compressed
 
-        Todo:
-        ----
-            Escape delimiter when found in data to be compressed
         """
         if self.stream_switch_delimiter in data:
             raise ValueError("Delimiter found in data")
@@ -207,9 +199,6 @@ class MSDecompressor:
         a '|' in the data ends up next to the delimiter we cannot determine where the true delimiter is
         output_delimiter: A byte sequence used to separate each compression stream in the output
 
-    Todo:
-    ----
-        Add support for multithreading.
 
     """
 

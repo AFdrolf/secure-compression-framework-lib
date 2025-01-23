@@ -3,8 +3,8 @@ from pathlib import Path
 from xml.etree import ElementTree
 from xml.sax import saxutils
 
-from secure_compression_framework_lib.partitioner.access_control import Principal, XMLDataUnit
-from secure_compression_framework_lib.partitioner.partitioner import Partitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal, XMLDataUnit
+from injection_attacks_mitigation_framework.partitioner.partitioner import Partitioner
 
 
 def generate_start_tag(element: ElementTree.Element) -> str:
@@ -37,9 +37,6 @@ class XmlAdvancedPartitioner(Partitioner):
         data: A Path object for an XML file
         access_control_policy: Maps XMLDataUnit objects to Principals (Callable[[XMLDataUnit], Principal])
 
-    Todo:
-    ----
-        We can provide a helper function that accepts a xpath-like string to generate an access control function
 
     """
 

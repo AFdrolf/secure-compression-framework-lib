@@ -1,11 +1,10 @@
 import sqlite3
 from pathlib import Path
 
-from secure_compression_framework_lib.partitioner.access_control import SQLiteDataUnit
-from secure_compression_framework_lib.partitioner.partitioner import Partitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import SQLiteDataUnit
+from injection_attacks_mitigation_framework.partitioner.partitioner import Partitioner
 
 
-# TODO: we may need to make this code more efficient to deal with large databases.
 class SQLiteSimplePartitioner(Partitioner):
     """Implements partitioner where the data is a Path object for the SQLite database file to be partitioned."""
 
@@ -13,7 +12,10 @@ class SQLiteSimplePartitioner(Partitioner):
         return self.data
 
     def partition(self) -> list[Path]:
-        """Creates a new SQLite database (serialized using SQLite's database file format) for each partition. Ouputs the list of paths for the new database files."""
+        """
+        Creates a new SQLite database (serialized using SQLite's database file format) for each partition.
+        Outputs the list of paths for the new database files.
+        """
         db_buckets = {}
         db_bucket_paths = []
 
@@ -42,7 +44,6 @@ class SQLiteSimplePartitioner(Partitioner):
                 db_bucket_id = self.partition_policy(principal)
 
                 # Create empty SQLite file if it does not exist yet
-                # TODO this needs to be agnostic to specific whatsapp tables
                 if db_bucket_id not in db_buckets:
                     db_bucket_path = self._get_data().parent / (str(db_bucket_id) + "_" + self._get_data().name)
                     db_bucket_paths.append(db_bucket_path)
@@ -50,7 +51,6 @@ class SQLiteSimplePartitioner(Partitioner):
                     db_bucket_cur = db_bucket_con.cursor()
                     for table_schema in schema:
                         # sqlite_sequence table gets created automatically; error is thrown if created manually
-                        # TODO cleanup for other tables
                         if (
                             "sqlite_sequence" not in table_schema[0]
                             and "message_ftsv2_content" not in table_schema[0]

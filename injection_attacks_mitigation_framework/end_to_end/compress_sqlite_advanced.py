@@ -1,14 +1,14 @@
 from collections.abc import Callable
 from pathlib import Path
 
-from secure_compression_framework_lib.multi_stream.compress import (
+from injection_attacks_mitigation_framework.multi_stream.compress import (
     MSCompressor,
     MSDecompressor,
     ZlibCompressionStream,
     ZlibDecompressionStream,
 )
-from secure_compression_framework_lib.partitioner.access_control import Principal, SQLiteDataUnit
-from secure_compression_framework_lib.partitioner.types.sqlite_advanced import SQLiteAdvancedPartitioner
+from injection_attacks_mitigation_framework.partitioner.access_control import Principal, SQLiteDataUnit
+from injection_attacks_mitigation_framework.partitioner.types.sqlite_advanced import SQLiteAdvancedPartitioner
 
 
 def compress_sqlite_advanced(
