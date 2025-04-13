@@ -33,7 +33,7 @@ def compress_sqlite_advanced(
     """
     partitioner = SQLiteAdvancedPartitioner(db_path, access_control_policy, partition_policy)
     bucketed_data = partitioner.partition()
-    merged_bucketed_data = _merge_bucketed_data(bucketed_data)
+    merged_bucketed_data = merge_bucketed_data(bucketed_data)
 
     msc = MSCompressor(ZlibCompressionStream, stream_switch_delimiter=b"[|\\")
     for bucket, data in merged_bucketed_data:
@@ -58,7 +58,7 @@ def unsafe_compress_sqlite_advanced(
     """
     partitioner = SQLiteAdvancedPartitioner(db_path, access_control_policy, partition_policy)
     bucketed_data = partitioner.partition()
-    merged_bucketed_data = _merge_bucketed_data(bucketed_data)
+    merged_bucketed_data = merge_bucketed_data(bucketed_data)
 
     usc = ZlibCompressionStream()
     for _, data in sorted(merged_bucketed_data, key=lambda x: x[0]):
@@ -66,7 +66,7 @@ def unsafe_compress_sqlite_advanced(
     return usc.finish()
 
 
-def _merge_bucketed_data(bucketed_data: list[tuple[str, bytes]]) -> list[tuple[str, bytes]]:
+def merge_bucketed_data(bucketed_data: list[tuple[str, bytes]]) -> list[tuple[str, bytes]]:
     # Merge adjacent buckets with same principal
     merged_bucketed_data = []
     current_bucket = bucketed_data[0][0]
