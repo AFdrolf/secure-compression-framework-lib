@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "injection_attacks_mitigation_framework"
 version = "0.0.1"
-description = "My new project."
+description = "A view-based partitioning framework for mitigating injection attacks in E2EE applications."
 authors = [
 ]
 license = { file = "LICENSE" }
